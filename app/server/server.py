@@ -1,10 +1,15 @@
+import json
 import logging
 from contextlib import asynccontextmanager
 
 import fastapi
+import pydantic
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from json_advanced.json_encoder import dumps
+from usso.exceptions import USSOException
 
+from apps.files.routes import router as files_router
 from core import exceptions
 
 from . import config, db
@@ -48,8 +53,46 @@ async def base_http_exception_handler(
     )
 
 
+@app.exception_handler(USSOException)
+async def usso_exception_handler(request: fastapi.Request, exc: USSOException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": exc.message, "error": exc.error},
+    )
+
+
+@app.exception_handler(pydantic.ValidationError)
+async def usso_exception_handler(
+    request: fastapi.Request, exc: pydantic.ValidationError
+):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "message": str(exc),
+            "error": "Exception",
+            "erros": json.loads(dumps(exc.errors())),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def usso_exception_handler(request: fastapi.Request, exc: Exception):
+    import traceback
+
+    traceback_str = "".join(traceback.format_tb(exc.__traceback__))
+
+    logging.error(f"Exception: {traceback_str} {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"message": str(exc), "error": "Exception"},
+    )
+
+
 origins = [
+    "http://localhost:3000",
     "http://localhost:8000",
+    "http://pixiee.ufiles.org",
+    "https://pixiee.ufiles.org",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -59,7 +102,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(files_router)
 
-@app.get("/")
-async def index():
-    return {"message": "Hello World!"}
+
+@app.get("/health")
+async def health():
+    return {"status": "UP"}

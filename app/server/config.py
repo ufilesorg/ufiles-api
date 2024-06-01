@@ -1,22 +1,32 @@
 """FastAPI server configuration."""
 
+import dataclasses
 import logging
 import logging.config
 import os
 from pathlib import Path
 
 import dotenv
-from pydantic import BaseModel
 from singleton import Singleton
 
 dotenv.load_dotenv()
 base_dir = Path(__file__).resolve().parent.parent
 
 
-class Settings(BaseModel, metaclass=Singleton):
+@dataclasses.dataclass
+class Settings(metaclass=Singleton):
     """Server config settings."""
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
+
+    page_max_limit: int = 100
+
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")
+    S3_DOMAIN: str = os.getenv("S3_DOMAIN")
+    S3_ENDPOINT: str = os.getenv("S3_ENDPOINT")
+    S3_ACCESS_KEY: str = os.getenv("S3_ACCESS_KEY")
+    S3_SECRET_KEY: str = os.getenv("S3_SECRET_KEY")
+    S3_REGION: str = os.getenv("S3_REGION")
 
     testing: bool = os.getenv("TESTING", default=False)
 

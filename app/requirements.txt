@@ -1,0 +1,16 @@
+uvicorn
+fastapi
+pydantic
+beanie
+
+filetype
+singleton_package
+json-advanced
+python-dotenv
+debugpy
+
+boto3
+usso
+
+aiohttp
+aiocache
