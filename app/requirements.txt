@@ -8,6 +8,7 @@ singleton_package
 json-advanced
 python-dotenv
 debugpy
+ipython
 
 boto3
 usso
