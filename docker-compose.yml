@@ -7,7 +7,7 @@ services:
     volumes:
       - ./app:/app
     ports:
-      - 3016:3000
+      - 3020:3000
     networks:
       - traefik-net
     labels:

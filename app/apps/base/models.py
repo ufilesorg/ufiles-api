@@ -9,6 +9,7 @@ from beanie import Insert, Replace, before_event
 from pydantic import BaseModel, Field
 from singleton import Singleton
 from usso import UserData
+
 from utils import aionetwork, basic
 
 

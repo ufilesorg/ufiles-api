@@ -1,5 +1,11 @@
 import logging
+
+from fastapi import Depends, File, Request, UploadFile
 from sqlalchemy import select
+from usso import UserData
+from usso.exceptions import USSOException
+from usso.fastapi import jwt_access_security
+
 from apps.base.routes import AbstractBaseRouter
 from apps.files.models import Business, BusinessPydantic
 from apps.files.models import File as file
@@ -7,11 +13,7 @@ from apps.files.models import FilePydantic, Object, ObjectPydantic
 
 # from apps.files.services import delete_file_from_s3, save_file_to_s3
 from core.exceptions import BaseHTTPException
-from fastapi import Depends, File, Request, UploadFile
 from server.db import AsyncSession, get_session
-from usso import UserData
-from usso.exceptions import USSOException
-from usso.fastapi import jwt_access_security
 
 
 class FilesRouter(AbstractBaseRouter[FilePydantic]):
@@ -33,12 +35,18 @@ class FilesRouter(AbstractBaseRouter[FilePydantic]):
         result = await db.execute(select(Business).filter(Business.domain == domain))
         business = result.scalars().first()
         if not business:
-            raise BaseHTTPException(status_code=404,message="Business not found",error="")
-    
-        files = await db.execute(select(file).filter(file.business_id==business.id,file.parent==user.id))
+            raise BaseHTTPException(
+                status_code=404, message="Business not found", error=""
+            )
+
+        files = await db.execute(
+            select(file).filter(file.business_id == business.id, file.parent == user.id)
+        )
         if not files:
-            raise BaseHTTPException(status_code=404,message="user files not found",error="")
-    
+            raise BaseHTTPException(
+                status_code=404, message="user files not found", error=""
+            )
+
         return files
 
 
