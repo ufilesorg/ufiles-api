@@ -14,7 +14,6 @@ from core.exceptions import BaseHTTPException
 from server.config import Settings
 
 
-
 def check_file_type(file: BytesIO) -> bool:
     file_info = filetype.guess(file)
     file.seek(0)  # Reset the file pointer to the beginning.

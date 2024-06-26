@@ -91,6 +91,7 @@ async def usso_exception_handler(request: fastapi.Request, exc: Exception):
 origins = [
     "http://localhost:3000",
     "http://localhost:8000",
+    "https://stg.ufiles.org"
     "http://pixiee.ufiles.org",
     "https://pixiee.ufiles.org",
 ]

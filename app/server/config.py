@@ -18,7 +18,12 @@ class Settings(metaclass=Singleton):
     """Server config settings."""
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
-
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL", default="sqlite+aiosqlite:///./test.db"
+    )
+    DATABASE_URL_SYNC: str = os.getenv(
+        "DATABASE_URL_SYNC", default="sqlite:///./test.db"
+    )
     page_max_limit: int = 100
 
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")

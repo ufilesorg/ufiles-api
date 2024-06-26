@@ -15,5 +15,10 @@ usso
 aiohttp
 aiocache
 
-sqlalchemy 
+sqlalchemy
 alembic
+asyncpg
+psycopg2-binary
+databases
+
+aiosqlite
