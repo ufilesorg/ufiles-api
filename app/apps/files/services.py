@@ -6,12 +6,11 @@ from io import BytesIO
 
 import aioboto3
 import filetype
-from fastapi import UploadFile
-from usso import UserData
-
 from apps.files.models import FileMetadata
 from core.exceptions import BaseHTTPException
+from fastapi import UploadFile
 from server.config import Settings
+from usso import UserData
 
 
 def check_file_type(file: BytesIO) -> bool:

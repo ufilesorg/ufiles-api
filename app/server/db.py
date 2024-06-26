@@ -1,7 +1,6 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
-
 from server.config import Settings
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # import databases
 # import sqlalchemy
@@ -31,7 +30,7 @@ from apps.files.models import Base
 #         await conn.run_sync(models.Base.metadata.create_all)
 
 
-async def get_session() -> Session:  # type: ignore
+async def get_session():
     async with async_session() as session:
         yield session
 

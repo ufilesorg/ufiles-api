@@ -4,13 +4,12 @@ from contextlib import asynccontextmanager
 
 import fastapi
 import pydantic
+from apps.files.routes import router as files_router
+from core import exceptions
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from json_advanced.json_encoder import dumps
 from usso.exceptions import USSOException
-
-from apps.files.routes import router as files_router
-from core import exceptions
 
 from . import config, db
 
@@ -91,8 +90,7 @@ async def usso_exception_handler(request: fastapi.Request, exc: Exception):
 origins = [
     "http://localhost:3000",
     "http://localhost:8000",
-    "https://stg.ufiles.org"
-    "http://pixiee.ufiles.org",
+    "https://stg.ufiles.org" "http://pixiee.ufiles.org",
     "https://pixiee.ufiles.org",
 ]
 app.add_middleware(

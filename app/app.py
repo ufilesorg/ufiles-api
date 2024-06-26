@@ -7,7 +7,6 @@ __all__ = ["app"]
 if __name__ == "__main__":
     import uvicorn
 
-
     module = Path(__file__).stem
     uvicorn.run(
         f"{module}:app",

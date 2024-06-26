@@ -17,7 +17,7 @@ class BaseModel(Base):
 class Business(BaseModel):
     __tablename__ = "business"
     id = Column(Integer, primary_key=True, index=True)
-    domin = Column(String)
+    domain = Column(String)
     s3_bucket_name = Column(String, nullable=True)
     s3_domain = Column(String, nullable=True)
     s3_endpoint = Column(String, nullable=True)
@@ -25,6 +25,7 @@ class Business(BaseModel):
     s3_secret_key = Column(String, nullable=True)
     s3_region = Column(String, nullable=True)
     is_public = Column(Boolean, default=False)
+    files = relationship("File", back_populates="business")
 
 
 class File(BaseModel):
@@ -34,7 +35,8 @@ class File(BaseModel):
     parent = Column(UUID)
     is_directory = Column(Boolean, default=False)
     s3_key = Column(String, ForeignKey("objects.s3_key"))
-    object = relationship("Object", back_populates="file")
+    objects = relationship("Object", back_populates="files")
+    business = relationship("Business", back_populates="files")
 
 
 class Object(BaseModel):
@@ -48,9 +50,10 @@ class Object(BaseModel):
 
 
 from datetime import datetime
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class BaseModelPydantic(BaseModel):
@@ -61,7 +64,7 @@ class BaseModelPydantic(BaseModel):
 
 class BusinessPydantic(BaseModelPydantic):
     id: int
-    domin: str
+    domain: str
     s3_bucket_name: Optional[str] = None
     s3_domain: Optional[str] = None
     s3_endpoint: Optional[str] = None
@@ -87,4 +90,3 @@ class ObjectPydantic(BaseModelPydantic):
     object_hash: str
     content_type: str
     files: Optional[List[FilePydantic]] = None
-
