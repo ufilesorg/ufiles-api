@@ -14,3 +14,6 @@ usso
 
 aiohttp
 aiocache
+
+sqlalchemy 
+alembic
