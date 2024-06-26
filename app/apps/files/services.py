@@ -13,16 +13,17 @@ from apps.files.models import FileMetadata
 from core.exceptions import BaseHTTPException
 from server.config import Settings
 
-ACCEPTED_FILE_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
 
 
 def check_file_type(file: BytesIO) -> bool:
     file_info = filetype.guess(file)
     file.seek(0)  # Reset the file pointer to the beginning.
 
-    if not file_info or file_info.mime not in ACCEPTED_FILE_TYPES:
-        raise BaseHTTPException(status_code=400, detail="Unsupported file type")
-    return True
+    if not file_info or file_info.mime not in Settings().ACCEPTED_FILE_TYPES:
+        raise BaseHTTPException(
+            status_code=400, error="unsupported", message="Unsupported file type"
+        )
+    return file_info.mime
 
 
 async def upload_to_s3(file_bytes, s3_key, **kwargs):
@@ -42,7 +43,7 @@ async def upload_to_s3(file_bytes, s3_key, **kwargs):
 
 async def save_file_to_s3(file: UploadFile, user: "UserData") -> "FileMetadata":
     file_bytes = BytesIO(await file.read())
-    check_file_type(file_bytes)
+    mime = check_file_type(file_bytes)
 
     basename, ext = os.path.splitext(file.filename)
     filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
@@ -62,7 +63,7 @@ async def save_file_to_s3(file: UploadFile, user: "UserData") -> "FileMetadata":
         filename=file.filename,
         s3_key=s3_key,
         url=url,
-        content_type=file.content_type,
+        content_type=mime,
         size=size,
     )
     return metadata

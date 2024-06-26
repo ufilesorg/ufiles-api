@@ -28,6 +28,8 @@ class Settings(metaclass=Singleton):
     S3_SECRET_KEY: str = os.getenv("S3_SECRET_KEY")
     S3_REGION: str = os.getenv("S3_REGION")
 
+    ACCEPTED_FILE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
+
     testing: bool = os.getenv("TESTING", default=False)
 
     log_config = {
