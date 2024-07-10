@@ -93,6 +93,7 @@ origins = [
     "http://localhost:8000",
     "http://pixiee.ufiles.org",
     "https://pixiee.ufiles.org",
+    "https://dashboard.pixiee.bot.inbeet.tech",
 ]
 app.add_middleware(
     CORSMiddleware,

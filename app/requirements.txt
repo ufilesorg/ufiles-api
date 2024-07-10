@@ -17,3 +17,7 @@ aiocache
 
 sqlalchemy 
 alembic
+
+pillow
+colorthief
+
