@@ -1,78 +1,90 @@
 import uuid
-from typing import Literal
+from datetime import datetime
 
-from apps.base.models import BaseEntity, OwnedEntity
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
+from apps.base.schemas import OwnedEntitySchema
+from pydantic import Field
 
 
-class ObjectMetadata(BaseEntity):
+class ObjectMetadata(BusinessEntity):
     s3_key: str
-    url: str
     size: int
     object_hash: str
     content_type: str
 
+    access_at: datetime = Field(default_factory=datetime.now)
 
-class FileMetadata(OwnedEntity):
-    business_id: uuid.UUID | None = None
-    parent: uuid.UUID | None = None
+    url: str
+
+
+class Permission(OwnedEntitySchema):
+    read: bool = False
+    write: bool = False
+    delete: bool = False
+
+
+class FileMetadata(BusinessOwnedEntity):
+    object_id: uuid.UUID
+
+    parent_id: uuid.UUID | None = None
     is_directory: bool = False
-    permission: Literal["private", "public"] = "public"
 
     filehash: str
     filename: str
 
-    s3_key: str
     url: str
 
     content_type: str
     size: int
+    delete_at: datetime | None = None
 
+    permission: list[Permission] = []
+    public_permission: Permission = Permission()
+
+    def permissions(self, user_id: str) -> Permission:
+        for perm in self.permission:
+            if perm.user_id == user_id:
+                return perm
+
+        return self.public_permission
+    
     @classmethod
-    def list(cls):
-        import json
-        from pathlib import Path
+    async def list_files_for_user(
+        cls, 
+        user_id: str,
+        business_id: uuid.UUID,
+        offset: int,
+        limit: int,
+        parent_id: uuid.UUID | None = None,
+    ):
+        # Query to find public read permissions
+        public_read_query = cls.find(
+            cls.is_deleted == False,
+            cls.business_id == business_id,
+            cls.parent_id == parent_id,
+            cls.is_directory == False,
+            cls.public_permission.read == True,
+        )
 
-        files_db = Path("db.json")
-        if files_db.exists():
-            with open("db.json", "r") as f:
-                files = json.load(f)
-        else:
-            files = {}
+        # Query to find files with user-specific read permissions
+        user_read_query = cls.find(
+            cls.is_deleted == False,
+            cls.business_id == business_id,
+            cls.parent_id == parent_id,
+            cls.is_directory == False,
+            cls.permission.filter(
+                lambda perm: perm.user_id == user_id and perm.read == True
+            ).exists(),
+        )
 
-        return files
+        # Combine both queries
+        combined_query = (
+            public_read_query.union(user_read_query)
+            .sort("-created_at")
+            .skip(offset)
+            .limit(limit)
+        )
 
-    async def save(self):
-        import json
-        from pathlib import Path
-
-        from json_advanced import JSONSerializer
-
-        files_db = Path("db.json")
-        if files_db.exists():
-            with open("db.json", "r") as f:
-                files = json.load(f)
-        else:
-            files = {}
-
-        files[self.filehash] = self.model_dump()
-
-        with open("db.json", "w") as f:
-            json.dump(files, f, cls=JSONSerializer, indent=4)
-
-    async def delete(self):
-        import json
-        from pathlib import Path
-
-        from json_advanced import JSONSerializer
-
-        files_db = Path("db.json")
-        if files_db.exists():
-            with open("db.json", "r") as f:
-                files = json.load(f)
-        else:
-            files = {}
-
-        del files[self.filehash]
-
-        with open("db.json", "w") as f:
-            json.dump(files, f, cls=JSONSerializer, indent=4)
+        # Execute query and return list of items
+        items = await combined_query.to_list()
+        return items

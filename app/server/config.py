@@ -18,8 +18,12 @@ class Settings(metaclass=Singleton):
     """Server config settings."""
 
     root_url: str = os.getenv("DOMAIN", default="http://localhost:8000")
+    mongo_uri: str = os.getenv("MONGO_URI", default="mongodb://localhost:27017")
+    redis_uri: str = os.getenv("REDIS_URI", default="redis://localhost:6379")
+    project_name: str = os.getenv("PROJECT_NAME", default="FastAPI Launchpad")
+    testing: bool = os.getenv("TESTING", default=False)
 
-    page_max_limit: int = 100
+    page_max_limit: int = 50
 
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")
     S3_DOMAIN: str = os.getenv("S3_DOMAIN")
@@ -30,14 +34,12 @@ class Settings(metaclass=Singleton):
 
     ACCEPTED_FILE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
 
-    testing: bool = os.getenv("TESTING", default=False)
-
     log_config = {
         "version": 1,
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                "level": "INFO",
+                "level": "WARNING",
                 "formatter": "standard",
             },
             "file": {

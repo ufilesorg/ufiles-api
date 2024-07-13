@@ -1,16 +1,16 @@
 from typing import Any, Generic, Type, TypeVar
 
-from fastapi import APIRouter, BackgroundTasks, Request
-
 from core.exceptions import BaseHTTPException
+from fastapi import APIRouter, BackgroundTasks, Request
 from server.config import Settings
 
 from .handlers import create_dto, update_dto
-from .models import BaseEntity, TaskBaseEntity
+from .models import BaseEntity
+from .tasks import TaskMixin
 
 # Define a type variable
 T = TypeVar("T", bound=BaseEntity)
-TE = TypeVar("TE", bound=TaskBaseEntity)
+TE = TypeVar("TE", bound=(BaseEntity, TaskMixin))
 
 
 class AbstractBaseRouter(Generic[T]):
@@ -48,6 +48,7 @@ class AbstractBaseRouter(Generic[T]):
             self.create_item,
             methods=["POST"],
             response_model=self.model,
+            status_code=201,
         )
         self.router.add_api_route(
             "/{uid:uuid}",

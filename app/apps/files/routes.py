@@ -1,29 +1,41 @@
-from fastapi import Depends, File, UploadFile
-from usso.exceptions import USSOException
-from usso.fastapi import jwt_access_security
-
-from apps.base.routes import AbstractBaseRouter
+from apps.business.middlewares import get_business
+from apps.business.models import Business
+from apps.business.routes import AbstractBusinessBaseRouter
 from apps.files.models import FileMetadata
 from apps.files.services import delete_file_from_s3, save_file_to_s3
 from core.exceptions import BaseHTTPException
+from fastapi import Depends, File, Request, UploadFile
+from server.config import Settings
+from usso.exceptions import USSOException
+from usso import UserData
+from usso.fastapi import jwt_access_security
 
 
-class FilesRouter(AbstractBaseRouter[FileMetadata]):
+class FilesRouter(AbstractBusinessBaseRouter[FileMetadata]):
     def __init__(self):
         super().__init__(
             model=FileMetadata,
             user_dependency=jwt_access_security,
-            resource_name="/files",
+            resource_name="/f",
             tags=["files"],
         )
 
-    async def list_items(self, user=Depends(jwt_access_security)):
-        files = [FileMetadata(**file) for file in FileMetadata.list().values()]
-        return [
-            file_metadata
-            for file_metadata in files
-            if file_metadata.user_id == user.uid
-        ]
+    async def list_items(
+        self,
+        request: Request,
+        offset: int = 0,
+        limit: int = 10,
+        business: Business = Depends(get_business),
+        user=Depends(jwt_access_security),
+        parent_id=None,
+    ):
+        user: UserData = await self.get_user(request)
+        limit = max(limit, Settings.page_max_limit)
+
+        items = await FileMetadata.list_files_for_user(
+            user.uid, business.uid, offset, limit, parent_id
+        )
+        return items
 
 
 router = FilesRouter().router

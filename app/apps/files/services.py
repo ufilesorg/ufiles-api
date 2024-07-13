@@ -6,13 +6,11 @@ from io import BytesIO
 
 import aioboto3
 import filetype
-from fastapi import UploadFile
-from usso import UserData
-
 from apps.files.models import FileMetadata
 from core.exceptions import BaseHTTPException
+from fastapi import UploadFile
 from server.config import Settings
-
+from usso import UserData
 
 
 def check_file_type(file: BytesIO) -> bool:
@@ -41,7 +39,9 @@ async def upload_to_s3(file_bytes, s3_key, **kwargs):
         file_bytes.close()
 
 
-async def save_file_to_s3(file: UploadFile, user: "UserData") -> "FileMetadata":
+async def save_file_to_s3(
+    file: UploadFile, user: "UserData", blocking=False
+) -> "FileMetadata":
     file_bytes = BytesIO(await file.read())
     mime = check_file_type(file_bytes)
 
@@ -50,11 +50,15 @@ async def save_file_to_s3(file: UploadFile, user: "UserData") -> "FileMetadata":
     filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
     size = len(file_bytes.getvalue())
 
-    business_id = "542a4547-e7ec-465e-8118-5543dbf67651"  # Adjust this according to your actual logic to set business_id.
+    business_id = (
+        "pixiee"  # Adjust this according to your actual logic to set business_id.
+    )
     s3_key = f"{business_id}/{filename}" if business_id else filename
     url = f"https://{Settings.S3_DOMAIN}/{s3_key}"
 
-    asyncio.create_task(upload_to_s3(file_bytes, s3_key))
+    upload_task = asyncio.create_task(upload_to_s3(file_bytes, s3_key))
+    if blocking:
+        await upload_task
 
     metadata = FileMetadata(
         user_id=user.uid,
