@@ -94,6 +94,7 @@ origins = [
     "http://pixiee.ufiles.org",
     "https://pixiee.ufiles.org",
     "https://dashboard.pixiee.bot.inbeet.tech",
+    "https://cmp-dev.liara.run",
 ]
 app.add_middleware(
     CORSMiddleware,

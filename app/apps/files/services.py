@@ -41,7 +41,7 @@ async def upload_to_s3(file_bytes, s3_key, **kwargs):
         file_bytes.close()
 
 
-async def save_file_to_s3(file: UploadFile, user: "UserData") -> "FileMetadata":
+async def save_file_to_s3(file: UploadFile, user: "UserData", blocking=False) -> "FileMetadata":
     file_bytes = BytesIO(await file.read())
     mime = check_file_type(file_bytes)
 
@@ -54,7 +54,9 @@ async def save_file_to_s3(file: UploadFile, user: "UserData") -> "FileMetadata":
     s3_key = f"{business_id}/{filename}" if business_id else filename
     url = f"https://{Settings.S3_DOMAIN}/{s3_key}"
 
-    asyncio.create_task(upload_to_s3(file_bytes, s3_key))
+    upload_task = asyncio.create_task(upload_to_s3(file_bytes, s3_key))
+    if blocking:
+        await upload_task
 
     metadata = FileMetadata(
         user_id=user.uid,
