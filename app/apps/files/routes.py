@@ -11,7 +11,6 @@ from apps.files.services import (
     generate_presigned_url,
     get_session,
     save_file_to_s3,
-    
 )
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
@@ -110,6 +109,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
             raise BaseHTTPException(
                 status_code=404, error="file_not_found", message="File not found"
             )
+        
+        if file.is_directory:
+            return FileMetaDataOut(**file.model_dump())
 
         if stream:
             session = get_session(business.config)
@@ -292,6 +294,11 @@ async def stream_file_endpoint(
     if not file.user_permission(user.uid).read:
         raise BaseHTTPException(
             status_code=404, error="file_not_found", message="File not found"
+        )
+    
+    if file.is_directory:
+        raise BaseHTTPException(
+            status_code=400, error="directory_is_not_downloadable", message="Directory is not downloadable"
         )
 
     if stream:

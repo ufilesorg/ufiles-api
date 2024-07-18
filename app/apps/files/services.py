@@ -1,6 +1,5 @@
 import asyncio
 import hashlib
-import os
 import uuid
 from functools import lru_cache
 from io import BytesIO
@@ -31,6 +30,7 @@ def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) 
             status_code=400, error="unsupported", message="Unsupported file type"
         )
     return mime_type
+
 
 @lru_cache
 def get_session(config: Config):
@@ -85,7 +85,7 @@ async def save_file_to_s3(
         file_bytes = BytesIO(await file.read())
     else:
         file_bytes = file
-    
+
     if filename:
         file_bytes.name = filename
     mime = check_file_type(file_bytes)

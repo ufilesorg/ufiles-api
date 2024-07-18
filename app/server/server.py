@@ -6,7 +6,8 @@ import fastapi
 import pydantic
 from apps.applications.routes import router as app_router
 from apps.business.routes import router as business_router
-from apps.files.routes import download_router, router as files_router
+from apps.files.routes import download_router
+from apps.files.routes import router as files_router
 from core import exceptions
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
