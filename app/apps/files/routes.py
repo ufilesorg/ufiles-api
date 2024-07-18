@@ -11,6 +11,7 @@ from apps.files.services import (
     generate_presigned_url,
     get_session,
     save_file_to_s3,
+    
 )
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
@@ -19,6 +20,7 @@ from server.config import Settings
 from usso import UserData
 from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
+from utils import aionetwork
 
 from .schemas import FileMetaDataOut
 
@@ -165,6 +167,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         uid,
         business: Business = Depends(get_business),
     ):
+        # todo before change permission
         user = await self.get_user(request)
         item = await update_dto_business(self.model)(request, user)
         if item is None:
@@ -217,12 +220,39 @@ async def upload_file(
     file: UploadFile = File(...),
     user=Depends(jwt_access_security),
     business: Business = Depends(get_business),
-    parent_id: uuid.UUID | None = Body(),
+    parent_id: uuid.UUID | None = Body(default=None),
     filename: str | None = Body(default=None),
     blocking: bool = False,
 ):
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
+
+    file_metadata = await save_file_to_s3(
+        file,
+        user,
+        business,
+        parent_id=parent_id,
+        filename=filename,
+        blocking=blocking,
+    )
+    await file_metadata.save()
+
+    return file_metadata
+
+
+@router.post("/url", response_model=FileMetaDataOut)
+async def upload_file(
+    url: str = Body(),
+    user=Depends(jwt_access_security),
+    business: Business = Depends(get_business),
+    parent_id: uuid.UUID | None = Body(default=None),
+    filename: str | None = Body(default=None),
+    blocking: bool = False,
+):
+    if user is None:
+        raise USSOException(status_code=401, error="unauthorized")
+
+    file = await aionetwork.aio_request_binary(url=url)
 
     file_metadata = await save_file_to_s3(
         file,

@@ -32,7 +32,6 @@ def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) 
         )
     return mime_type
 
-
 @lru_cache
 def get_session(config: Config):
     return aioboto3.Session(**config.s3_session_kwargs)
@@ -74,7 +73,7 @@ async def upload_to_s3(
 
 
 async def save_file_to_s3(
-    file: UploadFile,
+    file: UploadFile | BytesIO,
     user: "UserData",
     business: Business,
     parent_id: uuid.UUID | None = None,
@@ -82,7 +81,11 @@ async def save_file_to_s3(
     blocking: bool = False,
     **kwargs,
 ) -> "FileMetaData":
-    file_bytes = BytesIO(await file.read())
+    if isinstance(file, UploadFile):
+        file_bytes = BytesIO(await file.read())
+    else:
+        file_bytes = file
+    
     if filename:
         file_bytes.name = filename
     mime = check_file_type(file_bytes)
@@ -90,7 +93,7 @@ async def save_file_to_s3(
     size = len(file_bytes.getvalue())
     filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
 
-    basename, ext = os.path.splitext(file.filename)
+    # basename, ext = os.path.splitext(file.filename)
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
     filename = filehash
 
@@ -115,7 +118,7 @@ async def save_file_to_s3(
         user_id=user.uid,
         business_name=business.name,
         filehash=filehash,
-        filename=file.filename,
+        filename=filename,
         s3_key=s3_key,
         root_url=business.root_url,
         content_type=mime,
