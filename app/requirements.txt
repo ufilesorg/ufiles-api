@@ -3,10 +3,10 @@ fastapi
 pydantic
 beanie
 
-filetype
 singleton_package
 json-advanced
 python-dotenv
+python-magic
 debugpy
 ipython
 

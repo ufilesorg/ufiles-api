@@ -32,6 +32,11 @@ class Settings(metaclass=Singleton):
     S3_SECRET_KEY: str = os.getenv("S3_SECRET_KEY")
     S3_REGION: str = os.getenv("S3_REGION")
 
+    JWT_SECRET: str = os.getenv(
+        "USSO_JWT_SECRET",
+        default='{"jwk_url": "https://usso.io/website/jwks.json","type": "RS256","header": {"type": "Cookie", "name": "usso_access_token"} }',
+    )
+
     ACCEPTED_FILE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"]
 
     log_config = {
@@ -68,8 +73,9 @@ class Settings(metaclass=Singleton):
         },
     }
 
-    def config_logger(self):
+    @classmethod
+    def config_logger(cls):
         if not (base_dir / "logs").exists():
             (base_dir / "logs").mkdir()
 
-        logging.config.dictConfig(self.log_config)
+        logging.config.dictConfig(cls.log_config)

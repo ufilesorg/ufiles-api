@@ -26,7 +26,7 @@ class AbstractBusinessBaseRouter(AbstractBaseRouter[T]):
         limit = max(limit, Settings.page_max_limit)
 
         items_query = (
-            self.model.get_query(business_id=business.uid, user_id=user.uid)
+            self.model.get_query(business_name=business.name, user_id=user.uid)
             .sort("-created_at")
             .skip(offset)
             .limit(limit)
@@ -42,7 +42,7 @@ class AbstractBusinessBaseRouter(AbstractBaseRouter[T]):
     ):
         user = await self.get_user(request)
         item = await self.model.get_item(
-            uid, business_id=business.uid, user_id=user.uid
+            uid, business_name=business.name, user_id=user.uid
         )
         if item is None:
             raise BaseHTTPException(
@@ -88,7 +88,7 @@ class AbstractBusinessBaseRouter(AbstractBaseRouter[T]):
     ):
         user = await self.get_user(request)
         item = await self.model.get_item(
-            uid, business_id=business.uid, user_id=user.uid
+            uid, business_name=business.name, user_id=user.uid
         )
         if item is None:
             raise BaseHTTPException(
@@ -106,7 +106,7 @@ class BusinessRouter(AbstractBaseRouter[Business]):
         super().__init__(
             model=Business,
             user_dependency=jwt_access_security,
-            resource_name="/businesses",
+            prefix="/businesses",
         )
 
 

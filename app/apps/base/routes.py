@@ -5,12 +5,11 @@ from fastapi import APIRouter, BackgroundTasks, Request
 from server.config import Settings
 
 from .handlers import create_dto, update_dto
-from .models import BaseEntity
-from .tasks import TaskMixin
+from .models import BaseEntity, BaseEntityTaskMixin
 
 # Define a type variable
 T = TypeVar("T", bound=BaseEntity)
-TE = TypeVar("TE", bound=(BaseEntity, TaskMixin))
+TE = TypeVar("TE", bound=BaseEntityTaskMixin)
 
 
 class AbstractBaseRouter(Generic[T]):
@@ -19,18 +18,21 @@ class AbstractBaseRouter(Generic[T]):
         model: Type[T],
         user_dependency: Any,
         *args,
-        resource_name: str = None,
+        prefix: str = None,
         tags: list[str] = None,
         **kwargs,
     ):
         self.model = model
         self.user_dependency = user_dependency
-        if resource_name is None:
-            resource_name = f"/{model.__name__.lower()}s"
+        if prefix is None:
+            prefix = f"/{self.model.__name__.lower()}s"
         if tags is None:
-            tags = [model.__name__]
-        self.router = APIRouter(prefix=resource_name, tags=tags, **kwargs)
+            tags = [self.model.__name__]
+        self.router = APIRouter(prefix=prefix, tags=tags, **kwargs)
 
+        self.config_routes()
+
+    def config_routes(self):
         self.router.add_api_route(
             "/",
             self.list_items,

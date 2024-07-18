@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 
-from beanie import Document, Insert, Replace, before_event
+from beanie import Document, Insert, Replace, Save, SaveChanges, Update, before_event
+from pymongo import ASCENDING, IndexModel
 
 from .schemas import (
     BaseEntitySchema,
@@ -9,6 +10,7 @@ from .schemas import (
     BusinessOwnedEntitySchema,
     OwnedEntitySchema,
 )
+from .tasks import TaskMixin
 
 
 class BaseEntity(BaseEntitySchema, Document):
@@ -16,7 +18,11 @@ class BaseEntity(BaseEntitySchema, Document):
         keep_nulls = False
         validate_on_save = True
 
-    @before_event([Insert, Replace])
+        indexes = [
+            IndexModel([("uid", ASCENDING)], unique=True),
+        ]
+
+    @before_event([Insert, Replace, Save, SaveChanges, Update])
     async def pre_save(self):
         self.updated_at = datetime.now()
 
@@ -53,13 +59,13 @@ class OwnedEntity(OwnedEntitySchema, BaseEntity):
 class BusinessEntity(BusinessEntitySchema, BaseEntity):
 
     @classmethod
-    def get_query(cls, business_id: uuid.UUID, *args, **kwargs):
-        query = cls.find(cls.is_deleted == False, cls.business_id == business_id)
+    def get_query(cls, business_name: str, *args, **kwargs):
+        query = cls.find(cls.is_deleted == False, cls.business_name == business_name)
         return query
 
     @classmethod
-    async def get_item(cls, uid, business_id, *args, **kwargs) -> "BusinessEntity":
-        query = cls.get_query(business_id, *args, **kwargs).find(cls.uid == uid)
+    async def get_item(cls, uid, business_name, *args, **kwargs) -> "BusinessEntity":
+        query = cls.get_query(business_name, *args, **kwargs).find(cls.uid == uid)
         items = await query.to_list()
         if not items:
             return None
@@ -69,22 +75,26 @@ class BusinessEntity(BusinessEntitySchema, BaseEntity):
 class BusinessOwnedEntity(BusinessOwnedEntitySchema, BaseEntity):
 
     @classmethod
-    def get_query(cls, business_id, user_id, *args, **kwargs):
+    def get_query(cls, business_name, user_id, *args, **kwargs):
         query = cls.find(
             cls.is_deleted == False,
-            cls.business_id == business_id,
+            cls.business_name == business_name,
             cls.user_id == user_id,
         )
         return query
 
     @classmethod
     async def get_item(
-        cls, uid, business_id, user_id, *args, **kwargs
+        cls, uid, business_name, user_id, *args, **kwargs
     ) -> "BusinessOwnedEntity":
-        query = cls.get_query(business_id, user_id, *args, **kwargs).find(
+        query = cls.get_query(business_name, user_id, *args, **kwargs).find(
             cls.uid == uid
         )
         items = await query.to_list()
         if not items:
             return None
         return items[0]
+
+
+class BaseEntityTaskMixin(BaseEntity, TaskMixin):
+    pass

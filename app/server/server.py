@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 
 import fastapi
 import pydantic
-from apps.files.routes import router as files_router
+from apps.applications.routes import router as app_router
+from apps.business.routes import router as business_router
+from apps.files.routes import download_router, router as files_router
 from core import exceptions
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,7 +20,7 @@ from . import config, db
 async def lifespan(app: fastapi.FastAPI):  # type: ignore
     """Initialize application services."""
     await db.init_db()
-    config.Settings().config_logger()
+    config.Settings.config_logger()
 
     logging.info("Startup complete")
     yield
@@ -26,17 +28,17 @@ async def lifespan(app: fastapi.FastAPI):  # type: ignore
 
 
 app = fastapi.FastAPI(
-    title="FastAPI Launchpad",
+    title="Ufiles",
     # description=DESCRIPTION,
     version="0.1.0",
     contact={
         "name": "Mahdi Kiani",
-        "url": "https://github.com/mahdikiani/FastAPILaunchpad",
+        "url": "https://github.com/ufilesorg/ufiles-api",
         "email": "mahdikiany@gmail.com",
     },
     license_info={
         "name": "MIT License",
-        "url": "https://github.com/mahdikiani/FastAPILaunchpad/blob/main/LICENSE",
+        "url": "https://github.com/ufilesorg/ufiles-api/blob/main/LICENSE",
     },
     lifespan=lifespan,
 )
@@ -61,7 +63,7 @@ async def usso_exception_handler(request: fastapi.Request, exc: USSOException):
 
 
 @app.exception_handler(pydantic.ValidationError)
-async def usso_exception_handler(
+async def pydantic_exception_handler(
     request: fastapi.Request, exc: pydantic.ValidationError
 ):
     return JSONResponse(
@@ -75,26 +77,22 @@ async def usso_exception_handler(
 
 
 @app.exception_handler(Exception)
-async def usso_exception_handler(request: fastapi.Request, exc: Exception):
+async def general_exception_handler(request: fastapi.Request, exc: Exception):
     import traceback
 
     traceback_str = "".join(traceback.format_tb(exc.__traceback__))
+    # body = request._body
 
     logging.error(f"Exception: {traceback_str} {exc}")
+    logging.error(f"Exception on request: {request.url}")
+    # logging.error(f"Exception on request: {await request.body()}")
     return JSONResponse(
         status_code=500,
         content={"message": str(exc), "error": "Exception"},
     )
 
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:8000",
-    "http://pixiee.ufiles.org",
-    "https://pixiee.ufiles.org",
-    "https://dashboard.pixiee.bot.inbeet.tech",
-    "https://cmp-dev.liara.run",
-]
+origins = []
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -104,6 +102,9 @@ app.add_middleware(
 )
 
 app.include_router(files_router)
+app.include_router(download_router)
+app.include_router(business_router)
+app.include_router(app_router)
 
 
 @app.get("/health")

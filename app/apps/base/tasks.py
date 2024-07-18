@@ -88,7 +88,7 @@ class TaskReferenceList(BaseModel):
                 await asyncio.gather(*[task.start_processing() for task in task_items])
 
 
-class TaskMixin:
+class TaskMixin(BaseModel):
     task_status: Literal["draft", "init", "processing", "done", "error"] = "draft"
     task_report: str | None = None
     task_progress: int = -1

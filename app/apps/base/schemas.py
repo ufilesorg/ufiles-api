@@ -67,25 +67,25 @@ class OwnedEntitySchema(BaseEntitySchema):
 
 
 class BusinessEntitySchema(BaseEntitySchema):
-    business_id: uuid.UUID
+    business_name: str
 
     @property
     def create_exclude_set(self) -> list[str]:
-        return ["uid", "created_at", "updated_at", "is_deleted", "business_id"]
+        return ["uid", "created_at", "updated_at", "is_deleted", "business_name"]
 
     @property
     def update_exclude_set(self) -> list[str]:
-        return ["uid", "created_at", "updated_at", "business_id"]
+        return ["uid", "created_at", "updated_at", "business_name"]
 
-    def model_dump_create(self, business_id: uuid.UUID):
+    def model_dump_create(self, business_name: uuid.UUID):
         assert not (self.create_exclude_set and self.create_field_set)
         if self.create_field_set:
             return self.model_dump(fields=self.create_field_set) | {
-                "business_id": business_id
+                "business_name": business_name
             }
 
         return self.model_dump(exclude=self.create_exclude_set) | {
-            "business_id": business_id
+            "business_name": business_name
         }
 
 
@@ -98,24 +98,24 @@ class BusinessOwnedEntitySchema(OwnedEntitySchema, BusinessEntitySchema):
             "created_at",
             "updated_at",
             "is_deleted",
-            "business_id",
+            "business_name",
             "user_id",
         ]
 
     @property
     def update_exclude_set(self) -> list[str]:
-        return ["uid", "created_at", "updated_at", "business_id", "user_id"]
+        return ["uid", "created_at", "updated_at", "business_name", "user_id"]
 
-    def model_dump_create(self, business_id: uuid.UUID, user_id: uuid.UUID):
+    def model_dump_create(self, business_name: uuid.UUID, user_id: uuid.UUID):
         assert not (self.create_exclude_set and self.create_field_set)
         if self.create_field_set:
             return self.model_dump(fields=self.create_field_set) | {
-                "business_id": business_id,
+                "business_name": business_name,
                 "user_id": user_id,
             }
 
         return self.model_dump(exclude=self.create_exclude_set) | {
-            "business_id": business_id,
+            "business_name": business_name,
             "user_id": user_id,
         }
 
