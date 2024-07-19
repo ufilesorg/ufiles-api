@@ -68,28 +68,39 @@ class FileMetaData(BusinessOwnedEntity):
         parent_id: uuid.UUID | None = None,
         filehash: str | None = None,
         file_id: uuid.UUID | None = None,
+        is_deleted: bool = False,
     ) -> list["FileMetaData"]:
         offset = max(offset, 0)
         limit = min(limit, Settings.page_max_limit)
 
+        queries = [{"public_permission.read": True}]
+        if user_id:
+            b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
+            queries += [
+                {"user_id": b_user_id},
+                {
+                    "$and": [
+                        {"permissions.user_id": b_user_id},
+                        {"permissions.read": True},
+                    ]
+                },
+            ]
+
         query = {
-            "is_deleted": False,
+            "is_deleted": is_deleted,
             "business_name": business_name,
-            "$or": [
-                {"user_id": Binary.from_uuid(user_id, UUID_SUBTYPE)},
-                {"permission.read": True},
-                {"public_permission.read": True},
-            ],
+            "$or": queries,
+            "parent_id": (
+                Binary.from_uuid(parent_id, UUID_SUBTYPE) if parent_id else None
+            ),
         }
 
-        query["parent_id"] = (
-            Binary.from_uuid(parent_id, UUID_SUBTYPE) if parent_id else None
-        )
-        # if parent_id:
         if filehash:
             query["filehash"] = filehash
+            query.pop("parent_id", None)
         if file_id:
             query["uid"] = Binary.from_uuid(file_id, UUID_SUBTYPE)
+            query.pop("parent_id", None)
 
         pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
 

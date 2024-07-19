@@ -6,12 +6,7 @@ from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
 from apps.files.models import FileMetaData
-from apps.files.services import (
-    download_from_s3,
-    generate_presigned_url,
-    get_session,
-    save_file_to_s3,
-)
+from apps.files.services import generate_presigned_url, process_file, stream_from_s3
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -21,7 +16,7 @@ from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
 from utils import aionetwork
 
-from .schemas import FileMetaDataOut
+from .schemas import FileMetaDataOut, MultiPartOut, PartUploadOut
 
 
 class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
@@ -72,32 +67,41 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         offset: int = 0,
         limit: int = 10,
         business: Business = Depends(get_business),
-        user=Depends(jwt_access_security),
         parent_id: uuid.UUID = None,
         filehash: str = None,
+        is_deleted: bool = False,
     ):
-        user: UserData = await self.get_user(request)
+        try:
+            user: UserData = await self.get_user(request)
+        except USSOException:
+            user = None
+
         limit = max(limit, Settings.page_max_limit)
 
         items = await FileMetaData.list_files(
-            user.uid,
+            user.uid if user else None,
             business.name,
             offset,
             limit,
             parent_id=parent_id,
             filehash=filehash,
+            is_deleted=is_deleted,
         )
         return items
 
-    async def retrieve_item(
+    async def get_file(
         self,
+        request: Request,
         uid: uuid.UUID,
-        user: UserData = Depends(jwt_access_security),
         business: Business = Depends(get_business),
-        stream: bool = True,
     ):
+        try:
+            user: UserData = await self.get_user(request)
+        except USSOException:
+            user = None
+
         file = await FileMetaData.get_file(
-            user_id=user.uid, business_name=business.name, file_id=uid
+            user_id=user.uid if user else None, business_name=business.name, file_id=uid
         )
 
         if file is None:
@@ -105,43 +109,37 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
                 status_code=404, error="file_not_found", message="File not found"
             )
 
-        if not file.user_permission(user.uid).read:
+        if not file.user_permission(user.uid if user else None).read:
             raise BaseHTTPException(
                 status_code=404, error="file_not_found", message="File not found"
             )
-        
+
+        return file
+
+    async def retrieve_item(
+        self,
+        request: Request,
+        uid: uuid.UUID,
+        business: Business = Depends(get_business),
+        stream: bool = True,
+    ):
+        file = await self.get_file(request, uid, business)
+
         if file.is_directory:
+            return await self.list_items(
+                request=request,
+                offset=0,
+                limit=Settings.page_max_limit,
+                business=business,
+                parent_id=file.uid,
+            )
             return FileMetaDataOut(**file.model_dump())
 
         if stream:
-            session = get_session(business.config)
-
-            async def file_iterator():
-                async with session.client(
-                    **business.config.s3_client_kwargs
-                ) as s3_client:
-                    response = await s3_client.get_object(
-                        Bucket=business.config.s3_bucket, Key=file.s3_key
-                    )
-
-                    async for chunk in response["Body"].iter_chunks():
-                        yield chunk
-
             return StreamingResponse(
-                file_iterator(),
+                stream_from_s3(file.s3_key, config=business.config),
                 media_type=file.content_type,
                 headers={"Content-Disposition": f"inline; filename={file.filename}"},
-            )
-
-            file_bytes = await download_from_s3(file.s3_key, config=business.config)
-            headers = {"Content-Disposition": f"inline; filename={file.filename}"}
-
-            # return FileResponse(
-            #     file_bytes, media_type=file.content_type, filename=file.filename
-            # )
-
-            return StreamingResponse(
-                file_bytes, media_type=file.content_type, headers=headers
             )
 
         presigned_url = await generate_presigned_url(
@@ -229,7 +227,7 @@ async def upload_file(
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
 
-    file_metadata = await save_file_to_s3(
+    file_metadata = await process_file(
         file,
         user,
         business,
@@ -242,8 +240,61 @@ async def upload_file(
     return file_metadata
 
 
+@router.post("/multipart", response_model=MultiPartOut, include_in_schema=False)
+async def start_multipart(
+    user=Depends(jwt_access_security),
+    business: Business = Depends(get_business),
+    parent_id: uuid.UUID | None = Body(default=None),
+    filename: str | None = Body(default=None),
+    filehash: str = Body(),
+):
+    if user is None:
+        raise USSOException(status_code=401, error="unauthorized")
+
+    raise NotImplementedError("Multipart upload is not implemented yet")
+
+    return file_metadata
+
+
+@router.post(
+    "/multipart/{upload_id:str}", response_model=PartUploadOut, include_in_schema=False
+)
+async def upload_part(
+    upload_id: str,
+    part: UploadFile = File(...),
+    user=Depends(jwt_access_security),
+    business: Business = Depends(get_business),
+    part_number: int = Body(),
+    blocking: bool = False,
+):
+    if user is None:
+        raise USSOException(status_code=401, error="unauthorized")
+
+    raise NotImplementedError("Multipart upload is not implemented yet")
+
+    return file_metadata
+
+
+@router.post(
+    "/multipart/{upload_id:str}/complete",
+    response_model=FileMetaDataOut,
+    include_in_schema=False,
+)
+async def finish_multipart(
+    upload_id: str,
+    user=Depends(jwt_access_security),
+    business: Business = Depends(get_business),
+):
+    if user is None:
+        raise USSOException(status_code=401, error="unauthorized")
+
+    raise NotImplementedError("Multipart upload is not implemented yet")
+
+    return file_metadata
+
+
 @router.post("/url", response_model=FileMetaDataOut)
-async def upload_file(
+async def upload_url(
     url: str = Body(),
     user=Depends(jwt_access_security),
     business: Business = Depends(get_business),
@@ -255,9 +306,10 @@ async def upload_file(
         raise USSOException(status_code=401, error="unauthorized")
 
     file = await aionetwork.aio_request_binary(url=url)
+    upload_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
 
-    file_metadata = await save_file_to_s3(
-        file,
+    file_metadata = await process_file(
+        upload_file,
         user,
         business,
         parent_id=parent_id,
@@ -275,46 +327,29 @@ download_router = APIRouter(
 )
 
 
-@download_router.get("/{uid:uuid}")
-async def stream_file_endpoint(
+@download_router.get(
+    "/{uid:uuid}",
+    include_in_schema=False,
+    response_class=RedirectResponse | StreamingResponse,
+)
+async def download_file_endpoint(
+    request: Request,
     uid: uuid.UUID,
-    user: UserData = Depends(jwt_access_security),
     business: Business = Depends(get_business),
     stream: bool = True,
 ):
-    file = await FileMetaData.get_file(
-        user_id=user.uid, business_name=business.name, file_id=uid
-    )
+    file = await FilesRouter().get_file(request, uid, business)
 
-    if file is None:
-        raise BaseHTTPException(
-            status_code=404, error="file_not_found", message="File not found"
-        )
-
-    if not file.user_permission(user.uid).read:
-        raise BaseHTTPException(
-            status_code=404, error="file_not_found", message="File not found"
-        )
-    
     if file.is_directory:
         raise BaseHTTPException(
-            status_code=400, error="directory_is_not_downloadable", message="Directory is not downloadable"
+            status_code=400,
+            error="directory_is_not_downloadable",
+            message="Directory is not downloadable",
         )
 
     if stream:
-        session = get_session(business.config)
-
-        async def file_iterator():
-            async with session.client(**business.config.s3_client_kwargs) as s3_client:
-                response = await s3_client.get_object(
-                    Bucket=business.config.s3_bucket, Key=file.s3_key
-                )
-
-                async for chunk in response["Body"].iter_chunks():
-                    yield chunk
-
         return StreamingResponse(
-            file_iterator(),
+            stream_from_s3(file.s3_key, config=business.config),
             media_type=file.content_type,
             headers={"Content-Disposition": f"attachment; filename={file.filename}"},
         )

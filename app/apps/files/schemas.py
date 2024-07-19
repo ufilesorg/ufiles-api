@@ -39,3 +39,12 @@ class FileMetaDataOut(BusinessOwnedEntitySchema):
 class FileUploadMetaData(BaseModel):
     parent_id: uuid.UUID | None = None
     filename: str
+
+
+class MultiPartOut(BaseModel):
+    upload_id: str
+
+
+class PartUploadOut(BaseModel):
+    part_number: int
+    etag: str

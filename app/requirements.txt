@@ -15,10 +15,13 @@ usso
 
 aiohttp
 aiocache
+aiofiles
 
 sqlalchemy 
 alembic
 
 pillow
 colorthief
+
+cryptography
 

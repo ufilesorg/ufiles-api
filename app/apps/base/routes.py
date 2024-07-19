@@ -1,5 +1,6 @@
 from typing import Any, Generic, Type, TypeVar
 
+import singleton
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, BackgroundTasks, Request
 from server.config import Settings
@@ -12,7 +13,7 @@ T = TypeVar("T", bound=BaseEntity)
 TE = TypeVar("TE", bound=BaseEntityTaskMixin)
 
 
-class AbstractBaseRouter(Generic[T]):
+class AbstractBaseRouter(Generic[T], metaclass=singleton.Singleton):
     def __init__(
         self,
         model: Type[T],
