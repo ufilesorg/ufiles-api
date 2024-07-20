@@ -52,7 +52,11 @@ async def check_file(file: BytesIO, config: Config, **kwargs):
 
     size = len(file.getvalue())
     if size > config.size_limits:
-        pass
+        raise BaseHTTPException(
+            status_code=400,
+            error="file_too_large",
+            message="File size exceeds the maximum allowed size",
+        )
 
     # check for security (svg valid scripts)
     # convert if requested (ico, svg -> webp)

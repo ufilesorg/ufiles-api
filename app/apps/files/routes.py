@@ -76,7 +76,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         except USSOException:
             user = None
 
-        limit = max(limit, Settings.page_max_limit)
+        limit = max(1, min(limit, Settings.page_max_limit))
 
         items = await FileMetaData.list_files(
             user.uid if user else None,
