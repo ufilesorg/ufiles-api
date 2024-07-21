@@ -93,7 +93,10 @@ async def general_exception_handler(request: fastapi.Request, exc: Exception):
     )
 
 
-origins = []
+origins = [
+    "https://cmp-dev.liara.run/",
+    "https://app.pixiee.io",
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
