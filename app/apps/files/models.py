@@ -55,7 +55,7 @@ class FileMetaData(BusinessOwnedEntity):
             else f"https://{self.root_url}"
         ).strip("/")
 
-        return f"{base_url}/f/{self.uid}"
+        return f"{base_url}/files/{self.uid}"
 
     @classmethod
     async def list_files(
