@@ -24,7 +24,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         super().__init__(
             model=FileMetaData,
             user_dependency=jwt_access_security,
-            prefix="/f",
+            prefix="/files",
             tags=["files"],
         )
 
