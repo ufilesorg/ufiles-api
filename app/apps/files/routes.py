@@ -330,7 +330,7 @@ download_router = APIRouter(
 @download_router.get(
     "/{uid:uuid}",
     include_in_schema=False,
-    response_class=RedirectResponse | StreamingResponse,
+    # response_class=RedirectResponse | StreamingResponse,
 )
 async def download_file_endpoint(
     request: Request,

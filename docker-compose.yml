@@ -2,13 +2,13 @@ services:
   app:
     build: app
     restart: unless-stopped
-    command: python app.py
+    # command: python app.py
     env_file:
       - .env
     volumes:
       - ./app:/app
-    # ports:
-    #   - 3016:3000
+    ports:
+      - 3016:3000
     networks:
       - mongo-net
       - traefik-net
