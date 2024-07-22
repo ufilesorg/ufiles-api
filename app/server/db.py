@@ -1,6 +1,7 @@
-from apps.base.models import BaseEntity
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
+
+from apps.base.models import BaseEntity
 from utils.basic import get_all_subclasses
 
 from .config import Settings

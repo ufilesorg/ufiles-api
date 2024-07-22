@@ -1,8 +1,9 @@
 from typing import TypeVar
 
-from core.exceptions import BaseHTTPException
 from fastapi import Request
 from usso import UserData
+
+from core.exceptions import BaseHTTPException
 
 from .models import BaseEntity, OwnedEntity
 
