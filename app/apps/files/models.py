@@ -169,7 +169,7 @@ class FileMetaData(BusinessOwnedEntity):
             files = await cls.list_files(
                 user_id=user_id,
                 business_name=business_name,
-                dirname=part,
+                filename=part,
                 parent_id=parent_id,
             )
             if not files:
@@ -177,7 +177,7 @@ class FileMetaData(BusinessOwnedEntity):
                     files = [await cls.create_directory(
                         user_id=user_id,
                         business_name=business_name,
-                        filename=part,
+                        dirname=part,
                         parent_id=parent_id,
                     )]
                 else:
