@@ -13,6 +13,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
 from usso import UserData
+from pathlib import Path
 
 from apps.business.models import AccessType, Business, Config
 from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
@@ -73,10 +74,18 @@ async def process_file(
     filename: str | None = None,
     blocking: bool = False,
     **kwargs,
-) -> "FileMetaData":
+) -> FileMetaData:
     file_bytes = BytesIO(await file.read())
 
     if filename:
+        if '/' in filename:
+            if filename[-1] == '/':
+                raise BaseHTTPException(
+                    status_code=400,
+                    error="invalid_filename",
+                    message="Filename cannot end with a slash",
+                )
+            parent_id = await FileMetaData.get_path(filename, business.name, user.uid)
         file_bytes.name = filename
     else:
         file_bytes.name = file.filename
