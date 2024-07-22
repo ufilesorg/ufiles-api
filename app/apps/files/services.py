@@ -89,6 +89,7 @@ async def process_file(
     else:
         filepath = file.filename
         file_bytes.name = file.filename
+    file_dir = "/".join(filepath.split("/")[:-1]) + "/"
 
     mime, size = await check_file(file_bytes, business.config)
 
@@ -99,7 +100,7 @@ async def process_file(
     filename = file_bytes.name
 
     s3_key = filehash #f"{business.name}/{user.b64id}/{filename}" if business.name else filename
-    s3_key = f"{business.name}/{user.b64id}/{filehash}/{filepath}"
+    s3_key = f"{business.name}/{user.b64id}/{file_dir}{filehash}/{filename}"
 
     upload_task = asyncio.create_task(
         manage_upload_to_s3(
