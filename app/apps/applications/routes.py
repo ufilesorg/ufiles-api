@@ -1,6 +1,5 @@
-from usso.fastapi import jwt_access_security
-
 from apps.business.routes import AbstractBusinessBaseRouter
+from usso.fastapi import jwt_access_security
 
 from .models import Application
 

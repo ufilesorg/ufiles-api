@@ -2,11 +2,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
-
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from server.config import Settings
 
 from .schemas import Permission, PermissionSchema
@@ -57,7 +56,7 @@ class FileMetaData(BusinessOwnedEntity):
             else f"https://{self.root_url}"
         ).strip("/")
 
-        return f"{base_url}/files/{self.uid}/{self.filename}"
+        return f"{base_url}/f/{self.uid}/{self.filename}"
 
     @classmethod
     async def list_files(
@@ -143,13 +142,15 @@ class FileMetaData(BusinessOwnedEntity):
         dirname: str,
         parent_id: uuid.UUID | None = None,
     ) -> "FileMetaData":
-        return await cls.create(
+        res = cls(
             user_id=user_id,
             business_name=business_name,
             filename=dirname,
             is_directory=True,
             parent_id=parent_id,
         )
+        await res.save()
+        return res
 
     @classmethod
     async def get_path(
@@ -174,12 +175,14 @@ class FileMetaData(BusinessOwnedEntity):
             )
             if not files:
                 if create:
-                    files = [await cls.create_directory(
-                        user_id=user_id,
-                        business_name=business_name,
-                        dirname=part,
-                        parent_id=parent_id,
-                    )]
+                    files = [
+                        await cls.create_directory(
+                            user_id=user_id,
+                            business_name=business_name,
+                            dirname=part,
+                            parent_id=parent_id,
+                        )
+                    ]
                 else:
                     raise FileNotFoundError(f"File not found: {part}")
             parent_id = files[0].uid

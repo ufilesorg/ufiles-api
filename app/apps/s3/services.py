@@ -105,8 +105,9 @@ async def verify_signature(request: Request):
 
 
 def test():
-    import boto3
     from io import BytesIO
+
+    import boto3
 
     session = boto3.Session(
         AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION
@@ -118,4 +119,3 @@ def test():
     f = BytesIO(b"salam\n")
     f.seek(0)
     client.put_object(Bucket="mybucket", Key="myfile.txt", Body=f)
-

@@ -1,10 +1,9 @@
 from typing import TypeVar
 
-from fastapi import Request
-
 from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from apps.business.models import Business
 from core.exceptions import BaseHTTPException
+from fastapi import Request
 
 from .middlewares import get_business
 
