@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
 
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
+
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from server.config import Settings
 
 from .schemas import Permission, PermissionSchema
@@ -55,7 +56,7 @@ class FileMetaData(BusinessOwnedEntity):
             else f"https://{self.root_url}"
         ).strip("/")
 
-        return f"{base_url}/files/{self.uid}"
+        return f"{base_url}/files/{self.uid}/{self.filename}"
 
     @classmethod
     async def list_files(

@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 
+from pydantic import BaseModel
+
 from apps.base.schemas import (
     BaseEntitySchema,
     BusinessOwnedEntitySchema,
     OwnedEntitySchema,
 )
-from pydantic import BaseModel
 
 
 class PermissionSchema(BaseEntitySchema):
@@ -20,6 +21,8 @@ class Permission(PermissionSchema, OwnedEntitySchema):
 
 
 class FileMetaDataOut(BusinessOwnedEntitySchema):
+    s3_key: str | None = None
+
     parent_id: uuid.UUID | None = None
     is_directory: bool = False
 

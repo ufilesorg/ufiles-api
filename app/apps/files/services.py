@@ -9,14 +9,15 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
-from apps.business.models import AccessType, Business, Config
-from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
-from core.exceptions import BaseHTTPException
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
-from server.config import Settings
 from usso import UserData
+
+from apps.business.models import AccessType, Business, Config
+from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
+from core.exceptions import BaseHTTPException
+from server.config import Settings
 
 
 def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) -> bool:
@@ -77,6 +78,8 @@ async def process_file(
 
     if filename:
         file_bytes.name = filename
+    else:
+        file_bytes.name = file.filename
 
     mime, size = await check_file(file_bytes, business.config)
 
@@ -84,7 +87,7 @@ async def process_file(
 
     # basename, ext = os.path.splitext(file.filename)
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
-    filename = filehash
+    filename = file_bytes.name
 
     s3_key = f"{business.name}/{user.b64id}/{filename}" if business.name else filename
 
