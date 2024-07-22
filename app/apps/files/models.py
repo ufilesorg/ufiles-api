@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
@@ -68,6 +69,7 @@ class FileMetaData(BusinessOwnedEntity):
         *,
         parent_id: uuid.UUID | None = None,
         filehash: str | None = None,
+        filename: str | None = None,
         file_id: uuid.UUID | None = None,
         is_deleted: bool = False,
     ) -> list["FileMetaData"]:
@@ -102,6 +104,8 @@ class FileMetaData(BusinessOwnedEntity):
         if file_id:
             query["uid"] = Binary.from_uuid(file_id, UUID_SUBTYPE)
             query.pop("parent_id", None)
+        if filename:
+            query["filename"] = filename
 
         pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
 
@@ -130,6 +134,57 @@ class FileMetaData(BusinessOwnedEntity):
             raise ValueError("Multiple files found")
         if files:
             return files[0]
+
+    @classmethod
+    async def create_directory(
+        cls,
+        user_id: uuid.UUID,
+        business_name: str,
+        dirname: str,
+        parent_id: uuid.UUID | None = None,
+    ) -> "FileMetaData":
+        return await cls.create(
+            user_id=user_id,
+            business_name=business_name,
+            filename=dirname,
+            is_directory=True,
+            parent_id=parent_id,
+        )
+
+    @classmethod
+    async def get_path(
+        cls,
+        filepath: str,
+        business_name: str,
+        user_id: uuid.UUID,
+        parent_id=None,
+        create=True,
+    ) -> "FileMetaData":
+        if filepath.endswith("/"):
+            raise ValueError("Invalid filepath")
+        filepath: Path = Path(filepath.lstrip("/"))
+        parts = filepath.parts
+
+        for part in parts:
+            files = await cls.list_files(
+                user_id=user_id,
+                business_name=business_name,
+                dirname=part,
+                parent_id=parent_id,
+            )
+            if not files:
+                if create:
+                    files = [await cls.create_directory(
+                        user_id=user_id,
+                        business_name=business_name,
+                        filename=part,
+                        parent_id=parent_id,
+                    )]
+                else:
+                    raise FileNotFoundError(f"File not found: {part}")
+            parent_id = files[0].uid
+
+        return parent_id
 
     async def app_permission(self, app_id: str) -> PermissionSchema:
         for perm in self.permissions:
