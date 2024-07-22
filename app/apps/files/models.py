@@ -166,7 +166,7 @@ class FileMetaData(BusinessOwnedEntity):
         filepath: Path = Path(filepath.lstrip("/"))
         parts = filepath.parts
 
-        for part in parts:
+        for part in parts[:-1]:
             files = await cls.list_files(
                 user_id=user_id,
                 business_name=business_name,
@@ -187,7 +187,7 @@ class FileMetaData(BusinessOwnedEntity):
                     raise FileNotFoundError(f"File not found: {part}")
             parent_id = files[0].uid
 
-        return parent_id
+        return parent_id, parts[-1]
 
     async def app_permission(self, app_id: str) -> PermissionSchema:
         for perm in self.permissions:

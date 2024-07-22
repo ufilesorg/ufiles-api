@@ -76,6 +76,7 @@ async def process_file(
     file_bytes = BytesIO(await file.read())
 
     if filename:
+        filepath = filename
         if "/" in filename:
             if filename[-1] == "/":
                 raise BaseHTTPException(
@@ -83,9 +84,10 @@ async def process_file(
                     error="invalid_filename",
                     message="Filename cannot end with a slash",
                 )
-            parent_id = await FileMetaData.get_path(filename, business.name, user.uid)
+            parent_id, filename = await FileMetaData.get_path(filename, business.name, user.uid)
         file_bytes.name = filename
     else:
+        filepath = file.filename
         file_bytes.name = file.filename
 
     mime, size = await check_file(file_bytes, business.config)
@@ -96,7 +98,8 @@ async def process_file(
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
     filename = file_bytes.name
 
-    s3_key = f"{business.name}/{user.b64id}/{filename}" if business.name else filename
+    s3_key = filehash #f"{business.name}/{user.b64id}/{filename}" if business.name else filename
+    s3_key = f"{business.name}/{user.b64id}/{filehash}/{filepath}"
 
     upload_task = asyncio.create_task(
         manage_upload_to_s3(
