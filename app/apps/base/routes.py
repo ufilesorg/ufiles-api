@@ -1,9 +1,8 @@
 from typing import Any, Generic, Type, TypeVar
 
 import singleton
-from fastapi import APIRouter, BackgroundTasks, Request
-
 from core.exceptions import BaseHTTPException
+from fastapi import APIRouter, BackgroundTasks, Request
 from server.config import Settings
 
 from .handlers import create_dto, update_dto
@@ -170,3 +169,34 @@ class AbstractTaskRouter(AbstractBaseRouter[TE]):
             )
         background_tasks.add_task(item.start_processing)
         return item.model_dump()
+
+
+def copy_router(router: APIRouter, new_prefix: str):
+    new_router = APIRouter(prefix=new_prefix)
+    for route in router.routes:
+        new_router.add_api_route(
+            route.path.replace(router.prefix, ""),
+            route.endpoint,
+            methods=[
+                method
+                for method in route.methods
+                if method in ["GET", "POST", "PUT", "DELETE", "PATCH"]
+            ],
+            name=route.name,
+            response_class=route.response_class,
+            status_code=route.status_code,
+            tags=route.tags,
+            dependencies=route.dependencies,
+            summary=route.summary,
+            description=route.description,
+            response_description=route.response_description,
+            responses=route.responses,
+            deprecated=route.deprecated,
+            include_in_schema=route.include_in_schema,
+            response_model=route.response_model,
+            response_model_include=route.response_model_include,
+            response_model_exclude=route.response_model_exclude,
+            response_model_by_alias=route.response_model_by_alias,
+        )
+
+    return new_router

@@ -4,17 +4,17 @@ from contextlib import asynccontextmanager
 
 import fastapi
 import pydantic
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from json_advanced.json_encoder import dumps
-from usso.exceptions import USSOException
-
 from apps.applications.routes import router as app_router
+from apps.base.routes import copy_router
 from apps.business.routes import router as business_router
 from apps.files.routes import download_router
 from apps.files.routes import router as files_router
 from apps.s3.routes import router as s3_router
 from core import exceptions
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from json_advanced.json_encoder import dumps
+from usso.exceptions import USSOException
 
 from . import config, db
 
@@ -112,6 +112,9 @@ app.add_middleware(
 )
 
 app.include_router(files_router)
+app.include_router(
+    copy_router(files_router, new_prefix="/files"), include_in_schema=False
+)
 app.include_router(download_router)
 app.include_router(business_router)
 app.include_router(app_router)

@@ -9,16 +9,14 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from fastapi import UploadFile
-from usso import UserData
-from pathlib import Path
-
 from apps.business.models import AccessType, Business, Config
 from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
 from core.exceptions import BaseHTTPException
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from fastapi import UploadFile
 from server.config import Settings
+from usso import UserData
 
 
 def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) -> bool:
@@ -78,8 +76,8 @@ async def process_file(
     file_bytes = BytesIO(await file.read())
 
     if filename:
-        if '/' in filename:
-            if filename[-1] == '/':
+        if "/" in filename:
+            if filename[-1] == "/":
                 raise BaseHTTPException(
                     status_code=400,
                     error="invalid_filename",

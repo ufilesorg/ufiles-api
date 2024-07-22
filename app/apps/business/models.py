@@ -1,10 +1,9 @@
 import json
 from enum import Enum
 
+from apps.base.models import OwnedEntity
 from pydantic import BaseModel, model_validator
 from pymongo import ASCENDING, IndexModel
-
-from apps.base.models import OwnedEntity
 from server.config import Settings
 
 

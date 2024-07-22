@@ -1,13 +1,12 @@
 from typing import TypeVar
 
-from fastapi import Depends, Request
-from usso.fastapi import jwt_access_security
-
 from apps.base.models import BusinessEntity
 from apps.base.routes import AbstractBaseRouter
 from apps.business.handlers import create_dto_business, update_dto_business
 from core.exceptions import BaseHTTPException
+from fastapi import Depends, Request
 from server.config import Settings
+from usso.fastapi import jwt_access_security
 
 from .middlewares import get_business
 from .models import Business
