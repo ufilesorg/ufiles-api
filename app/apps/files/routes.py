@@ -250,15 +250,14 @@ async def upload_file(
 
     if user.uid != business.user_id:
         user_id = user.uid
+    elif user_id is None:
+        user_id = user.uid
 
-    form_data = await request.form()
+    form_data = dict(await request.form())
 
     file_metadata = await process_file(
-        file,
-        user_id,
-        business,
-        parent_id=parent_id,
-        filename=filename,
+        user_id=user_id,
+        business=business,
         blocking=blocking,
         **form_data,
     )

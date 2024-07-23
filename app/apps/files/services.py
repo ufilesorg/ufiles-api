@@ -97,13 +97,24 @@ async def process_file(
     mime, size = await check_file(file_bytes, business.config)
 
     filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
-
     # basename, ext = os.path.splitext(file.filename)
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
     filename = file_bytes.name
 
+    existing: list[FileMetaData] = await FileMetaData.list_files(
+        user_id=user_id,
+        business_name=business.name,
+        filehash=filehash,
+        filename=filename,
+    )
+    if existing:
+        for existed in existing:
+            if existed.parent_id == parent_id:
+                return existed
+
     s3_key = filehash  # f"{business.name}/{user.b64id}/{filename}" if business.name else filename
     s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{file_dir}{filehash}/{filename}"
+    s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{filehash}"
 
     upload_task = asyncio.create_task(
         manage_upload_to_s3(
