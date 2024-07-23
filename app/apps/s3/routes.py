@@ -61,7 +61,7 @@ async def delete_file(
     file_location = os.path.join(STORAGE_DIR, bucket_name, object_name)
     if os.path.exists(file_location):
         os.remove(file_location)
-        return Response(status_code=200)
+        return Response(status_code=204)
     else:
         raise BaseHTTPException(
             status_code=404, error="file_not_found", message="File not found"

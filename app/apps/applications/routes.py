@@ -20,8 +20,7 @@ class ApplicationRouter(AbstractBusinessBaseRouter[Application]):
 router = ApplicationRouter().router
 
 
-@router.get("/{app_name}/{path:path}")
-async def get_app(request: Request, app_name: str, path: str):
+async def proxy_request(request: Request, app_name: str, path: str, method: str):
     app = await Application.find_one(Application.name == app_name)
     if not app:
         raise exceptions.BaseHTTPException(
@@ -32,11 +31,41 @@ async def get_app(request: Request, app_name: str, path: str):
 
     url = f"{app.domain}/{path}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(
-            url, headers=request.headers, params=request.query_params
+        async with session.request(
+            method=method,
+            url=url,
+            headers=request.headers,
+            params=request.query_params,
+            data=await request.body() if method in ["POST", "PUT", "PATCH"] else None,
         ) as response:
+            content = await response.read()
             return Response(
                 status_code=response.status,
-                content=await response.read(),
-                headers=response.headers,
+                content=content,
+                headers=dict(response.headers),
             )
+
+
+@router.get("/{app_name}/{path:path}")
+async def get_app(request: Request, app_name: str, path: str):
+    return await proxy_request(request, app_name, path, "GET")
+
+
+@router.post("/{app_name}/{path:path}")
+async def post_app(request: Request, app_name: str, path: str):
+    return await proxy_request(request, app_name, path, "POST")
+
+
+@router.put("/{app_name}/{path:path}")
+async def put_app(request: Request, app_name: str, path: str):
+    return await proxy_request(request, app_name, path, "PUT")
+
+
+@router.delete("/{app_name}/{path:path}")
+async def delete_app(request: Request, app_name: str, path: str):
+    return await proxy_request(request, app_name, path, "DELETE")
+
+
+@router.patch("/{app_name}/{path:path}")
+async def patch_app(request: Request, app_name: str, path: str):
+    return await proxy_request(request, app_name, path, "PATCH")
