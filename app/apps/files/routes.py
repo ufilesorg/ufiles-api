@@ -78,16 +78,22 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         filehash: str | None = None,
         is_deleted: bool = False,
         is_directory: bool | None = None,
+        user_id: uuid.UUID | None = None,
     ):
         try:
             user: UserData = await self.get_user(request)
         except USSOException:
             user = None
 
+        if not user:
+            user_id = None
+        elif user and user.uid != business.user_id:
+            user_id = user.uid
+
         limit = max(1, min(limit, Settings.page_max_limit))
 
         items = await FileMetaData.list_files(
-            user.uid if user else None,
+            user_id,
             business.name,
             offset,
             limit,
