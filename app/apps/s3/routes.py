@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from .services import verify_signature
 
-router = APIRouter(prefix="/s3", tags=["s3"], include_in_schema=False)
+router = APIRouter(prefix="", tags=["s3"], include_in_schema=False)
 
 STORAGE_DIR = "./storage"
 
