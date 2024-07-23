@@ -2,11 +2,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
-
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from server.config import Settings
 
 from .schemas import Permission, PermissionSchema
@@ -72,6 +71,7 @@ class FileMetaData(BusinessOwnedEntity):
         filename: str | None = None,
         file_id: uuid.UUID | None = None,
         is_deleted: bool = False,
+        is_directory: bool | None = None,
     ) -> list["FileMetaData"]:
         offset = max(offset, 0)
         limit = min(limit, Settings.page_max_limit)
@@ -106,6 +106,8 @@ class FileMetaData(BusinessOwnedEntity):
             query.pop("parent_id", None)
         if filename:
             query["filename"] = filename
+        if is_directory is not None:
+            query["is_directory"] = is_directory
 
         pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
 

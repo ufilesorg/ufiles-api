@@ -1,12 +1,6 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
-from fastapi.responses import RedirectResponse, StreamingResponse
-from usso import UserData
-from usso.exceptions import USSOException
-from usso.fastapi import jwt_access_security
-
 from apps.business.handlers import create_dto_business, update_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
@@ -14,7 +8,12 @@ from apps.business.routes import AbstractBusinessBaseRouter
 from apps.files.models import FileMetaData
 from apps.files.services import generate_presigned_url, process_file, stream_from_s3
 from core.exceptions import BaseHTTPException
+from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
+from fastapi.responses import RedirectResponse, StreamingResponse
 from server.config import Settings
+from usso import UserData
+from usso.exceptions import USSOException
+from usso.fastapi import jwt_access_security
 from utils import aionetwork
 
 from .schemas import FileMetaDataOut, MultiPartOut, PartUploadOut
@@ -77,6 +76,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         parent_id: uuid.UUID = None,
         filehash: str = None,
         is_deleted: bool = False,
+        is_directory: bool = None,
     ):
         try:
             user: UserData = await self.get_user(request)
@@ -93,6 +93,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
             parent_id=parent_id,
             filehash=filehash,
             is_deleted=is_deleted,
+            is_directory=is_directory,
         )
         return items
 
@@ -228,18 +229,22 @@ router = FilesRouter().router
 @router.post("/upload", response_model=FileMetaDataOut)
 async def upload_file(
     file: UploadFile = File(...),
-    user=Depends(jwt_access_security),
+    user: UserData = Depends(jwt_access_security),
     business: Business = Depends(get_business),
     parent_id: uuid.UUID | None = Body(default=None),
     filename: str | None = Body(default=None),
     blocking: bool = False,
+    user_id: uuid.UUID | None = Body(default=None),
 ):
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
 
+    if user.uid != business.user_id:
+        user_id = user.uid
+
     file_metadata = await process_file(
         file,
-        user,
+        user_id,
         business,
         parent_id=parent_id,
         filename=filename,

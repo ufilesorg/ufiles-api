@@ -1,9 +1,8 @@
 from typing import Any, Generic, Type, TypeVar
 
 import singleton
-from fastapi import APIRouter, BackgroundTasks, Request
-
 from core.exceptions import BaseHTTPException
+from fastapi import APIRouter, BackgroundTasks, Request
 from server.config import Settings
 
 from .handlers import create_dto, update_dto

@@ -9,15 +9,14 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from fastapi import UploadFile
-from usso import UserData
-
 from apps.business.models import AccessType, Business, Config
 from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
 from core.exceptions import BaseHTTPException
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from fastapi import UploadFile
 from server.config import Settings
+from utils.b64tools import b64_encode_uuid_strip
 
 
 def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) -> bool:
@@ -67,7 +66,7 @@ async def check_file(file: BytesIO, config: Config, **kwargs):
 
 async def process_file(
     file: UploadFile,
-    user: "UserData",
+    user_id: uuid.UUID,
     business: Business,
     parent_id: uuid.UUID | None = None,
     filename: str | None = None,
@@ -86,7 +85,7 @@ async def process_file(
                     message="Filename cannot end with a slash",
                 )
             parent_id, filename = await FileMetaData.get_path(
-                filename, business.name, user.uid
+                filename, business.name, user_id
             )
         file_bytes.name = filename
     else:
@@ -103,7 +102,7 @@ async def process_file(
     filename = file_bytes.name
 
     s3_key = filehash  # f"{business.name}/{user.b64id}/{filename}" if business.name else filename
-    s3_key = f"{business.name}/{user.b64id}/{file_dir}{filehash}/{filename}"
+    s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{file_dir}{filehash}/{filename}"
 
     upload_task = asyncio.create_task(
         manage_upload_to_s3(
@@ -121,7 +120,7 @@ async def process_file(
         await upload_task
 
     metadata = FileMetaData(
-        user_id=user.uid,
+        user_id=user_id,
         business_name=business.name,
         filehash=filehash,
         filename=filename,
