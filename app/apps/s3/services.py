@@ -60,7 +60,7 @@ async def verify_signature(request: Request):
         logging.info(f"Headers Dict: {headers_dict}")
         logging.info(f"Sorted Headers: {sorted_headers}")
 
-        canonical_uri = request.url.hostname # request.url.path
+        canonical_uri = request.url.path
         canonical_querystring = request.url.query
         # canonical_headers = "".join([f"{k}:{v}\n" for k, v in sorted_headers.items()])
         canonical_headers = "".join(
@@ -71,7 +71,16 @@ async def verify_signature(request: Request):
             payload_hash = (
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             )
-        canonical_request = f"{request.method}\n{canonical_uri}\n{canonical_querystring}\n{canonical_headers}\n{';'.join(signed_headers)}\n{payload_hash}"
+        canonical_request = "\n".join(
+            [
+                request.method,
+                canonical_uri,
+                canonical_querystring,
+                canonical_headers,
+                ";".join(signed_headers),
+                payload_hash,
+            ]
+        )
 
         logging.info(f"Canonical Request: {canonical_request}")
 
