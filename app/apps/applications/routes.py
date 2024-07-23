@@ -1,9 +1,8 @@
-from usso.fastapi import jwt_access_security
-
 import aiohttp
 from apps.business.routes import AbstractBusinessBaseRouter
 from core import exceptions
-from fastapi import Response, Request
+from fastapi import Request, Response
+from usso.fastapi import jwt_access_security
 
 from .models import Application
 
@@ -33,7 +32,9 @@ async def get_app(request: Request, app_name: str, path: str):
 
     url = f"{app.domain}/{path}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=request.headers, params=request.query_params) as response:
+        async with session.get(
+            url, headers=request.headers, params=request.query_params
+        ) as response:
             return Response(
                 status_code=response.status,
                 content=await response.read(),

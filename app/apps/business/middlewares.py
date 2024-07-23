@@ -1,7 +1,6 @@
-from fastapi import Request
-
 from apps.business.models import Business
 from core.exceptions import BaseHTTPException
+from fastapi import Request
 
 
 async def get_business(request: Request):

@@ -13,7 +13,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv(
 AWS_REGION = os.getenv("AWS_REGION", "cf")
 SERVICE = "s3"
 ALGORITHM = "AWS4-HMAC-SHA256"
-ENDPOINT="https://stg.ufiles.org/s3"
+ENDPOINT = "https://stg.ufiles.org/s3"
 
 
 def sign(key, msg):
@@ -134,9 +134,7 @@ def test():
     session = boto3.Session(
         AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION
     )
-    client = session.client(
-        "s3", endpoint_url=ENDPOINT
-    )
+    client = session.client("s3", endpoint_url=ENDPOINT)
     f = BytesIO(b"salam2")
     f.seek(0)
     put_res = client.put_object(Bucket="mybucket", Key="myfile2.txt", Body=f)
