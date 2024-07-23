@@ -60,7 +60,7 @@ async def verify_signature(request: Request):
         logging.info(f"Headers Dict: {headers_dict}")
         logging.info(f"Sorted Headers: {sorted_headers}")
 
-        canonical_uri = request.url.path
+        canonical_uri = request.url.hostname # request.url.path
         canonical_querystring = request.url.query
         # canonical_headers = "".join([f"{k}:{v}\n" for k, v in sorted_headers.items()])
         canonical_headers = "".join(
