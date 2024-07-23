@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 
+from pydantic import BaseModel
+
 from apps.base.schemas import (
     BaseEntitySchema,
     BusinessOwnedEntitySchema,
     OwnedEntitySchema,
 )
-from pydantic import BaseModel
 
 
 class PermissionSchema(BaseEntitySchema):

@@ -2,10 +2,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
+
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from server.config import Settings
 
 from .schemas import Permission, PermissionSchema

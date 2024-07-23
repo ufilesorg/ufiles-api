@@ -13,6 +13,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv(
 AWS_REGION = os.getenv("AWS_REGION", "cf")
 SERVICE = "s3"
 ALGORITHM = "AWS4-HMAC-SHA256"
+ENDPOINT="https://stg.ufiles.org/s3"
 
 
 def sign(key, msg):
@@ -35,42 +36,47 @@ async def verify_signature(request: Request):
             logging.error("Missing authorization or x-amz-date header")
             return False
 
-        logging.info(f"Authorization Header: {authorization_header}")
-        logging.info(f"x-amz-date: {amz_date}")
+        logging.debug(f"\n\n=======================================================\n")
+        logging.debug(f"Request URL:\n{request.url}")
+        logging.debug(f"Authorization Header:\n{authorization_header}")
+        logging.debug(f"x-amz-date:\n{amz_date}")
 
         auth_parts = authorization_header.split(", ")
         credential_part = auth_parts[0]
         signed_headers_part = auth_parts[1]
         signature_part = auth_parts[2]
 
-        credential_scope = credential_part.split(" ")[1].split("/")[1:-1]
+        credential_scope = (
+            credential_part.split(" ")[1].split("Credential=")[1].split("/")[1:]
+        )
         credential_scope = "/".join(credential_scope)
 
         signed_headers = signed_headers_part.split("SignedHeaders=")[-1].split(";")
         provided_signature = signature_part.split("Signature=")[-1]
 
-        logging.info(f"Signed Headers: {signed_headers}")
-        logging.info(f"Credential Scope: {credential_scope}")
+        logging.debug(f"Signed Headers:\n{signed_headers}")
+        logging.debug(f"Credential Scope:\n{credential_scope}")
 
         headers_dict = {k.lower(): v for k, v in request.headers.items()}
         sorted_headers = {
             k: headers_dict[k] for k in sorted(headers_dict) if k in signed_headers
         }
 
-        logging.info(f"Headers Dict: {headers_dict}")
-        logging.info(f"Sorted Headers: {sorted_headers}")
+        logging.debug(f"Headers Dict:\n{headers_dict}")
+        logging.debug(f"Sorted Headers:\n{sorted_headers}")
 
         canonical_uri = request.url.path
         canonical_querystring = request.url.query
-        # canonical_headers = "".join([f"{k}:{v}\n" for k, v in sorted_headers.items()])
-        canonical_headers = "".join(
-            f"{k.lower()}:{v.strip()}\n" for k, v in request.headers.items()
-        )
-        payload_hash = hashlib.sha256(await request.body()).hexdigest()
-        if headers_dict.get("x-amz-content-sha256") == "UNSIGNED-PAYLOAD":
+        if False and headers_dict.get("x-amz-content-sha256") == "UNSIGNED-PAYLOAD":
             payload_hash = (
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             )
+        else:
+            payload_hash = hashlib.sha256(await request.body()).hexdigest()
+
+        sorted_headers["x-amz-content-sha256"] = payload_hash
+        canonical_headers = "".join([f"{k}:{v}\n" for k, v in sorted_headers.items()])
+
         canonical_request = "\n".join(
             [
                 request.method,
@@ -82,11 +88,18 @@ async def verify_signature(request: Request):
             ]
         )
 
-        logging.info(f"Canonical Request: {canonical_request}")
+        logging.debug(f"Canonical Request:\n{canonical_request}")
 
-        string_to_sign = f'{ALGORITHM}\n{amz_date}\n{credential_scope}\n{hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()}'
+        string_to_sign = "\n".join(
+            [
+                ALGORITHM,
+                amz_date,
+                credential_scope,
+                hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
+            ]
+        )
 
-        logging.info(f"String to Sign: {string_to_sign}")
+        logging.debug(f"String to Sign:\n{string_to_sign}")
 
         date_stamp = credential_scope.split("/")[0]
         signing_key = get_signature_key(
@@ -100,14 +113,14 @@ async def verify_signature(request: Request):
             signing_key, string_to_sign.encode("utf-8"), hashlib.sha256
         ).hexdigest()
 
-        logging.info(f"Calculated Signature: {signature}")
-        logging.info(f"Provided Signature: {provided_signature}")
+        logging.debug(f"Calculated Signature: {signature}")
+        logging.debug(f"Provided Signature: {provided_signature}")
 
         is_valid = provided_signature == signature
         if not is_valid:
             logging.error("Signatures do not match")
-
         return is_valid
+
     except Exception as e:
         logging.error(f"Verification failed: {e}")
         return False
@@ -122,9 +135,13 @@ def test():
         AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION
     )
     client = session.client(
-        "s3", endpoint_url="https://stg.ufiles.org/s3", region_name=AWS_REGION
+        "s3", endpoint_url=ENDPOINT
     )
-
-    f = BytesIO(b"salam\n")
+    f = BytesIO(b"salam2")
     f.seek(0)
-    client.put_object(Bucket="mybucket", Key="myfile.txt", Body=f)
+    put_res = client.put_object(Bucket="mybucket", Key="myfile2.txt", Body=f)
+    print(put_res)
+    get_res = client.get_object(Bucket="mybucket", Key="myfile2.txt")
+    print(get_res["Body"].read())
+    del_res = client.delete_object(Bucket="mybucket", Key="myfile2.txt")
+    print(del_res)

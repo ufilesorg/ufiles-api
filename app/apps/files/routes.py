@@ -1,6 +1,12 @@
 import uuid
 from datetime import datetime
 
+from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
+from fastapi.responses import RedirectResponse, StreamingResponse
+from usso import UserData
+from usso.exceptions import USSOException
+from usso.fastapi import jwt_access_security
+
 from apps.business.handlers import create_dto_business, update_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
@@ -8,12 +14,7 @@ from apps.business.routes import AbstractBusinessBaseRouter
 from apps.files.models import FileMetaData
 from apps.files.services import generate_presigned_url, process_file, stream_from_s3
 from core.exceptions import BaseHTTPException
-from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
-from fastapi.responses import RedirectResponse, StreamingResponse
 from server.config import Settings
-from usso import UserData
-from usso.exceptions import USSOException
-from usso.fastapi import jwt_access_security
 from utils import aionetwork
 
 from .schemas import FileMetaDataOut, MultiPartOut, PartUploadOut
@@ -71,7 +72,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         self,
         request: Request,
         offset: int = 0,
-        limit: int = 10,
+        limit: int = 50,
         business: Business = Depends(get_business),
         parent_id: uuid.UUID = None,
         filehash: str = None,
