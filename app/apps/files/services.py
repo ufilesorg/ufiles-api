@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import hashlib
 import os
@@ -119,8 +120,22 @@ async def process_file(
     if blocking:
         await upload_task
 
+    public_permission = PermissionSchema(
+        read=(business.config.access_type == AccessType.public)
+    )
+    if kwargs.get("public_permission"):
+        try:
+            public_permission = PermissionSchema.model_validate_json(
+                kwargs.get("public_permission")
+            )
+        except Exception as e:
+            logging.warning(
+                f"Invalid public_permission: {e}\n{kwargs.get('public_permission')}"
+            )
+
     metadata = FileMetaData(
         user_id=user_id,
+        metadata={"file_dir": file_dir},
         business_name=business.name,
         filehash=filehash,
         filename=filename,
@@ -129,9 +144,7 @@ async def process_file(
         content_type=mime,
         size=size,
         parent_id=parent_id,
-        public_permission=PermissionSchema(
-            read=(business.config.access_type == AccessType.public)
-        ),
+        public_permission=public_permission,
     )
     return metadata
 
