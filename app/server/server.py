@@ -111,13 +111,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(files_router, prefix='v1')
+app.include_router(files_router, prefix='/v1')
 app.include_router(
     copy_router(files_router, new_prefix="/files"), include_in_schema=False
 )
-app.include_router(download_router, prefix='v1')
-app.include_router(business_router, prefix='v1')
-app.include_router(app_router, prefix='v1')
+app.include_router(download_router, prefix='/v1')
+app.include_router(business_router, prefix='/v1')
+app.include_router(app_router, prefix='/v1')
 app.include_router(s3_router)
 
 
