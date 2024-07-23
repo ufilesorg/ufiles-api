@@ -111,6 +111,10 @@ class FileMetaData(BusinessOwnedEntity):
 
         pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
 
+        import logging
+
+        logging.info(pipeline)
+
         # Execute query and return list of items
         items = await cls.aggregate(pipeline).to_list()
         return [cls(**item) for item in items]

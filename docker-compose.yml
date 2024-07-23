@@ -14,16 +14,6 @@ services:
       - traefik-net
       - ufiles-net
     labels:
-      # traefik.enable: "true"
-      # traefik.http.routers.${PROJECT_NAME}.entrypoints: web
-      # traefik.http.routers.${PROJECT_NAME}.rule: ${DOMAINS}
-      # traefik.http.routers.${PROJECT_NAME}.middlewares: https-redirect
-      # traefik.http.routers.${PROJECT_NAME}-secure.entrypoints: websecure
-      # traefik.http.routers.${PROJECT_NAME}-secure.rule: ${DOMAINS}
-      # traefik.http.routers.${PROJECT_NAME}-secure.tls: "true"
-      # traefik.http.routers.${PROJECT_NAME}-secure.tls.certresolver: letsencrypt
-      # traefik.http.services.${PROJECT_NAME}.loadbalancer.server.port: 8000
-      # traefik.docker.network: traefik-net
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
       - "traefik.http.routers.${PROJECT_NAME}.rule=${DOMAINS}"
@@ -41,5 +31,5 @@ networks:
   traefik-net:
     external: true
   ufiles-net:
-    name: ufiles-stg-net
+    name: ufiles-net
 

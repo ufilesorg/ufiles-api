@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime
 
@@ -90,18 +91,23 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         elif user and user.uid != business.user_id:
             user_id = user.uid
 
+        params = dict(request.query_params)
+        params.pop("user_id", None)
+        logging.info(params)
+
         limit = max(1, min(limit, Settings.page_max_limit))
 
         items = await FileMetaData.list_files(
             user_id,
             business.name,
-            offset,
-            limit,
-            parent_id=parent_id,
-            filehash=filehash,
-            filename=filename,
-            is_deleted=is_deleted,
-            is_directory=is_directory,
+            **params,
+            # offset,
+            # limit,
+            # parent_id=parent_id,
+            # filehash=filehash,
+            # filename=filename,
+            # is_deleted=is_deleted,
+            # is_directory=is_directory,
         )
         return items
 
