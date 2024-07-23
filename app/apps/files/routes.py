@@ -236,6 +236,7 @@ router = FilesRouter().router
 
 @router.post("/upload", response_model=FileMetaDataOut)
 async def upload_file(
+    request: Request, 
     file: UploadFile = File(...),
     user: UserData = Depends(jwt_access_security),
     business: Business = Depends(get_business),
@@ -250,6 +251,8 @@ async def upload_file(
     if user.uid != business.user_id:
         user_id = user.uid
 
+    form_data = await request.form()
+
     file_metadata = await process_file(
         file,
         user_id,
@@ -257,6 +260,7 @@ async def upload_file(
         parent_id=parent_id,
         filename=filename,
         blocking=blocking,
+        **form_data,
     )
     await file_metadata.save()
 
