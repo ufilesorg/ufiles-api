@@ -254,6 +254,7 @@ async def upload_file(
         user_id = user.uid
 
     form_data = dict(await request.form())
+    form_data.pop("user_id", None)
 
     file_metadata = await process_file(
         user_id=user_id,
