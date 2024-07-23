@@ -74,9 +74,10 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         limit: int = 50,
         business: Business = Depends(get_business),
         parent_id: uuid.UUID = None,
-        filehash: str = None,
+        filename: str | None = None,
+        filehash: str | None = None,
         is_deleted: bool = False,
-        is_directory: bool = None,
+        is_directory: bool | None = None,
     ):
         try:
             user: UserData = await self.get_user(request)
@@ -92,6 +93,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
             limit,
             parent_id=parent_id,
             filehash=filehash,
+            filename=filename,
             is_deleted=is_deleted,
             is_directory=is_directory,
         )
