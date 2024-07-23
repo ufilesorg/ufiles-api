@@ -6,6 +6,7 @@ from typing import Any, Callable, Coroutine, Literal, Union
 
 from pydantic import BaseModel, Field
 from singleton import Singleton
+
 from utils import aionetwork, basic
 
 from .schemas import BaseEntitySchema

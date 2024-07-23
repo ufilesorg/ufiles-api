@@ -49,7 +49,7 @@ class Settings(metaclass=Singleton):
             },
             "file": {
                 "class": "logging.FileHandler",
-                "level": "INFO",
+                "level": "DEBUG",
                 "filename": base_dir / "logs" / "info.log",
                 "formatter": "standard",
             },
@@ -67,7 +67,11 @@ class Settings(metaclass=Singleton):
                     "console",
                     "file",
                 ],
-                "level": "INFO",
+                "level": (
+                    "INFO"
+                    if os.getenv("TESTING", default="").lower() not in ["true", "1"]
+                    else "DEBUG"
+                ),
                 "propagate": True,
             }
         },

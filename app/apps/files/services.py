@@ -9,14 +9,15 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
-from apps.business.models import AccessType, Business, Config
-from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
-from core.exceptions import BaseHTTPException
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
-from server.config import Settings
 from usso import UserData
+
+from apps.business.models import AccessType, Business, Config
+from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
+from core.exceptions import BaseHTTPException
+from server.config import Settings
 
 
 def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) -> bool:
@@ -84,7 +85,9 @@ async def process_file(
                     error="invalid_filename",
                     message="Filename cannot end with a slash",
                 )
-            parent_id, filename = await FileMetaData.get_path(filename, business.name, user.uid)
+            parent_id, filename = await FileMetaData.get_path(
+                filename, business.name, user.uid
+            )
         file_bytes.name = filename
     else:
         filepath = file.filename
@@ -99,7 +102,7 @@ async def process_file(
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
     filename = file_bytes.name
 
-    s3_key = filehash #f"{business.name}/{user.b64id}/{filename}" if business.name else filename
+    s3_key = filehash  # f"{business.name}/{user.b64id}/{filename}" if business.name else filename
     s3_key = f"{business.name}/{user.b64id}/{file_dir}{filehash}/{filename}"
 
     upload_task = asyncio.create_task(
