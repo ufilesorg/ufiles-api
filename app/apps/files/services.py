@@ -137,7 +137,7 @@ async def process_file(
         permission=(
             PermissionEnum.READ
             if (business.config.access_type == AccessType.public)
-            else PermissonEnum.NONE
+            else PermissionEnum.NONE
         )
     )
     if kwargs.get("public_permission"):
