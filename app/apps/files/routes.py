@@ -1,4 +1,3 @@
-import logging
 import uuid
 from datetime import datetime
 
@@ -253,7 +252,7 @@ router = FilesRouter().router
 
 @router.post("/upload", response_model=FileMetaDataOut)
 async def upload_file(
-    request: Request, 
+    request: Request,
     user: UserData = Depends(jwt_access_security),
     business: Business = Depends(get_business),
     user_id: uuid.UUID | None = Body(default=None),
@@ -302,7 +301,9 @@ async def upload_url(
 
     file = await aionetwork.aio_request_binary(url=url)
     upload_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
-    return await upload_file(request, user, business, user_id, blocking, upload_file, parent_id, filename)
+    return await upload_file(
+        request, user, business, user_id, blocking, upload_file, parent_id, filename
+    )
 
 
 @router.post("/multipart", response_model=MultiPartOut, include_in_schema=False)

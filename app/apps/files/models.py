@@ -8,7 +8,7 @@ from pydantic import Field
 from pymongo import ASCENDING, IndexModel
 from server.config import Settings
 
-from .schemas import Permission, PermissionSchema, PermissionEnum
+from .schemas import Permission, PermissionEnum, PermissionSchema
 
 
 class ObjectMetaData(BusinessEntity):
@@ -94,16 +94,18 @@ class FileMetaData(BusinessOwnedEntity):
 
         if not user_id:
             return []
-        
+
         b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
         permission_query = [
             {"user_id": b_user_id},
-            {"permissions": {
-                "$elemMatch": {
-                    "user_id": b_user_id,
-                    "permission": {"$gt": PermissionEnum.READ},
+            {
+                "permissions": {
+                    "$elemMatch": {
+                        "user_id": b_user_id,
+                        "permission": {"$gt": PermissionEnum.READ},
+                    }
                 }
-            }},
+            },
         ]
 
         query = {
@@ -224,7 +226,6 @@ class FileMetaData(BusinessOwnedEntity):
                 updated_at=self.updated_at,
                 user_id=user_id,
                 permission=PermissionEnum.OWNER,
-                
                 uid=self.uid,
                 read=True,
                 write=True,

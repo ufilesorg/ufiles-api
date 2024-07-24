@@ -1,16 +1,9 @@
 import uuid
 from datetime import datetime
-
-from apps.base.schemas import (
-    CoreEntitySchema,
-    BaseEntitySchema,
-    BusinessOwnedEntitySchema,
-    OwnedEntitySchema,
-)
-from pydantic import BaseModel
-from beanie import Indexed
-
 from enum import Enum
+
+from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
+from pydantic import BaseModel
 
 
 class PermissionEnum(int, Enum):

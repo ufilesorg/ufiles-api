@@ -1,6 +1,6 @@
-import logging
 import asyncio
 import hashlib
+import logging
 import os
 import uuid
 from functools import lru_cache
@@ -11,14 +11,15 @@ import aioboto3
 import aiofiles
 import magic
 from apps.business.models import AccessType, Business, Config
-from .models import FileMetaData, ObjectMetaData, 
-from .schamas import PermissionSchema, PermissionEnum
 from core.exceptions import BaseHTTPException
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
 from server.config import Settings
 from utils.b64tools import b64_encode_uuid_strip
+
+from .models import FileMetaData, ObjectMetaData
+from .schamas import PermissionEnum, PermissionSchema
 
 
 def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) -> bool:
@@ -133,7 +134,11 @@ async def process_file(
         await upload_task
 
     public_permission = PermissionSchema(
-        permission=PermissionEnum.READ if (business.config.access_type == AccessType.public) else PermissonEnum.NONE
+        permission=(
+            PermissionEnum.READ
+            if (business.config.access_type == AccessType.public)
+            else PermissonEnum.NONE
+        )
     )
     if kwargs.get("public_permission"):
         try:
