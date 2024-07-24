@@ -93,20 +93,27 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         params = dict(request.query_params)
         params.pop("user_id", None)
         params.pop("root_permission", None)
+        params.pop("offset", None)
+        params.pop("limit", None)
+        params.pop("parent_id", None)
+        params.pop("filename", None)
+        params.pop("filehash", None)
+        params.pop("is_deleted", None)
+        params.pop("is_directory", None)
 
         limit = max(1, min(limit, Settings.page_max_limit))
 
         items = await FileMetaData.list_files(
             user_id,
             business.name,
+            offset,
+            limit,
+            parent_id=parent_id,
+            filename=filename,
+            filehash=filehash,
+            is_deleted=is_deleted,
+            is_directory=is_directory,
             **params,
-            # offset,
-            # limit,
-            # parent_id=parent_id,
-            # filehash=filehash,
-            # filename=filename,
-            # is_deleted=is_deleted,
-            # is_directory=is_directory,
         )
         return items
 
