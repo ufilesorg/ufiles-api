@@ -88,7 +88,7 @@ class FileMetaData(BusinessOwnedEntity):
             item = cls(**items[0])
             if root_permission:
                 return [item]
-            if item.user_permission(user_id) > PermissionEnum.READ:
+            if item.user_permission(user_id).read:
                 return [item]
             return []
 
