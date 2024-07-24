@@ -72,14 +72,30 @@ class FileMetaData(BusinessOwnedEntity):
         file_id: uuid.UUID | None = None,
         is_deleted: bool = False,
         is_directory: bool | None = None,
+        root_permission: bool = False,
     ) -> list["FileMetaData"]:
         offset = max(offset, 0)
         limit = min(limit, Settings.page_max_limit)
 
-        queries = [] if file_id is None else [{"public_permission.read": True}]
+        if file_id:
+            file_id = Binary.from_uuid(file_id, UUID_SUBTYPE)
+            query = {"uid": file_id, "business_name": business_name}
+            pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
+
+            items = await cls.aggregate(pipeline).to_list()
+            if len(items) > 1:
+                raise ValueError("Multiple files found")
+            item = cls(**items[0])
+            if root_permission:
+                return [item]
+            if item.user_permission(user_id).read:
+                return [item]
+            return []
+
+        permission_query = []
         if user_id:
             b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
-            queries += [
+            permission_query += [
                 {"user_id": b_user_id},
                 {
                     "$and": [
@@ -92,7 +108,7 @@ class FileMetaData(BusinessOwnedEntity):
         query = {
             "is_deleted": is_deleted,
             "business_name": business_name,
-            "$or": queries,
+            "$or": permission_query,
             "parent_id": (
                 Binary.from_uuid(parent_id, UUID_SUBTYPE) if parent_id else None
             ),
@@ -101,19 +117,12 @@ class FileMetaData(BusinessOwnedEntity):
         if filehash:
             query["filehash"] = filehash
             query.pop("parent_id", None)
-        if file_id:
-            query["uid"] = Binary.from_uuid(file_id, UUID_SUBTYPE)
-            query.pop("parent_id", None)
         if filename:
             query["filename"] = filename
         if is_directory is not None:
             query["is_directory"] = is_directory
 
         pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
-
-        import logging
-
-        logging.info(pipeline)
 
         # Execute query and return list of items
         items = await cls.aggregate(pipeline).to_list()
@@ -125,16 +134,13 @@ class FileMetaData(BusinessOwnedEntity):
         user_id: str,
         business_name: str,
         file_id: uuid.UUID,
-        *,
-        parent_id: uuid.UUID | None = None,
-        filehash: str | None = None,
+        root_permission: bool = False,
     ) -> "FileMetaData":
         files = await cls.list_files(
             user_id=user_id,
             business_name=business_name,
             file_id=file_id,
-            parent_id=parent_id,
-            filehash=filehash,
+            root_permission=root_permission,
         )
         if len(files) > 1:
             raise ValueError("Multiple files found")
@@ -211,7 +217,10 @@ class FileMetaData(BusinessOwnedEntity):
             delete=False,
         )
 
-    def user_permission(self, user_id: uuid.UUID) -> PermissionSchema:
+    def user_permission(self, user_id: uuid.UUID | None) -> PermissionSchema:
+        if user_id is None:
+            return self.public_permission
+        
         if isinstance(user_id, str):
             user_id = uuid.UUID(user_id)
 

@@ -93,7 +93,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
 
         params = dict(request.query_params)
         params.pop("user_id", None)
-        logging.info(params)
+        params.pop("root_permission", None)
 
         limit = max(1, min(limit, Settings.page_max_limit))
 
@@ -123,13 +123,18 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         except USSOException:
             user = None
 
+        root_permission = bool(user and user.uid == business.user_id)
+
         if not user:
             user_id = None
         elif user and user.uid != business.user_id:
             user_id = user.uid
 
         file = await FileMetaData.get_file(
-            user_id=user_id, business_name=business.name, file_id=uid
+            user_id=user_id,
+            business_name=business.name,
+            file_id=uid,
+            root_permission=root_permission,
         )
 
         if file is None:
@@ -249,13 +254,13 @@ router = FilesRouter().router
 @router.post("/upload", response_model=FileMetaDataOut)
 async def upload_file(
     request: Request, 
-    file: UploadFile = File(...),
     user: UserData = Depends(jwt_access_security),
     business: Business = Depends(get_business),
+    user_id: uuid.UUID | None = Body(default=None),
+    blocking: bool = False,
+    file: UploadFile = File(...),
     parent_id: uuid.UUID | None = Body(default=None),
     filename: str | None = Body(default=None),
-    blocking: bool = False,
-    user_id: uuid.UUID | None = Body(default=None),
 ):
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
@@ -267,8 +272,10 @@ async def upload_file(
 
     form_data = dict(await request.form())
     form_data.pop("user_id", None)
+    file = form_data.pop("file", file)
 
     file_metadata = await process_file(
+        file=file,
         user_id=user_id,
         business=business,
         blocking=blocking,
@@ -277,6 +284,25 @@ async def upload_file(
     await file_metadata.save()
 
     return file_metadata
+
+
+@router.post("/url", response_model=FileMetaDataOut)
+async def upload_url(
+    request: Request,
+    url: str = Body(),
+    user: UserData = Depends(jwt_access_security),
+    business: Business = Depends(get_business),
+    user_id: uuid.UUID | None = Body(default=None),
+    blocking: bool = False,
+    parent_id: uuid.UUID | None = Body(default=None),
+    filename: str | None = Body(default=None),
+):
+    if user is None:
+        raise USSOException(status_code=401, error="unauthorized")
+
+    file = await aionetwork.aio_request_binary(url=url)
+    upload_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
+    return await upload_file(request, user, business, user_id, blocking, upload_file, parent_id, filename)
 
 
 @router.post("/multipart", response_model=MultiPartOut, include_in_schema=False)
@@ -328,34 +354,6 @@ async def finish_multipart(
         raise USSOException(status_code=401, error="unauthorized")
 
     raise NotImplementedError("Multipart upload is not implemented yet")
-
-    return file_metadata
-
-
-@router.post("/url", response_model=FileMetaDataOut)
-async def upload_url(
-    url: str = Body(),
-    user=Depends(jwt_access_security),
-    business: Business = Depends(get_business),
-    parent_id: uuid.UUID | None = Body(default=None),
-    filename: str | None = Body(default=None),
-    blocking: bool = False,
-):
-    if user is None:
-        raise USSOException(status_code=401, error="unauthorized")
-
-    file = await aionetwork.aio_request_binary(url=url)
-    upload_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
-
-    file_metadata = await process_file(
-        upload_file,
-        user,
-        business,
-        parent_id=parent_id,
-        filename=filename,
-        blocking=blocking,
-    )
-    await file_metadata.save()
 
     return file_metadata
 
