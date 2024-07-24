@@ -11,7 +11,8 @@ import aioboto3
 import aiofiles
 import magic
 from apps.business.models import AccessType, Business, Config
-from apps.files.models import FileMetaData, ObjectMetaData, PermissionSchema
+from .models import FileMetaData, ObjectMetaData, 
+from .schamas import PermissionSchema, PermissionEnum
 from core.exceptions import BaseHTTPException
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -132,7 +133,7 @@ async def process_file(
         await upload_task
 
     public_permission = PermissionSchema(
-        read=(business.config.access_type == AccessType.public)
+        permission=PermissionEnum.READ if (business.config.access_type == AccessType.public) else PermissonEnum.NONE
     )
     if kwargs.get("public_permission"):
         try:

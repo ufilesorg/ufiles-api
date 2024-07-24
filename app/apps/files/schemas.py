@@ -2,21 +2,52 @@ import uuid
 from datetime import datetime
 
 from apps.base.schemas import (
+    CoreEntitySchema,
     BaseEntitySchema,
     BusinessOwnedEntitySchema,
     OwnedEntitySchema,
 )
 from pydantic import BaseModel
+from beanie import Indexed
+
+from enum import Enum
 
 
-class PermissionSchema(BaseEntitySchema):
-    read: bool = False
-    write: bool = False
-    delete: bool = False
+class PermissionEnum(int, Enum):
+    NONE: 0
+    READ: 10
+    WRITE: 20
+    MANAGE: 30
+    DELETE: 40
+    OWNER: 100
 
 
-class Permission(PermissionSchema, OwnedEntitySchema):
-    pass
+class PermissionSchema(CoreEntitySchema):
+    permission: PermissionEnum = PermissionEnum.NONE
+
+    @property
+    def read(self):
+        return self.permission >= PermissionEnum.READ
+
+    @property
+    def write(self):
+        return self.permission >= PermissionEnum.WRITE
+
+    @property
+    def manage(self):
+        return self.permission >= PermissionEnum.MANAGE
+
+    @property
+    def delete(self):
+        return self.permission >= PermissionEnum.DELETE
+
+    @property
+    def owner(self):
+        return self.permission >= PermissionEnum.OWNER
+
+
+class Permission(PermissionSchema):
+    user_id: uuid.UUID
 
 
 class FileMetaDataOut(BusinessOwnedEntitySchema):

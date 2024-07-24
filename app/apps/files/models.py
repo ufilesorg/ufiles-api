@@ -8,7 +8,7 @@ from pydantic import Field
 from pymongo import ASCENDING, IndexModel
 from server.config import Settings
 
-from .schemas import Permission, PermissionSchema
+from .schemas import Permission, PermissionSchema, PermissionEnum
 
 
 class ObjectMetaData(BusinessEntity):
@@ -88,22 +88,23 @@ class FileMetaData(BusinessOwnedEntity):
             item = cls(**items[0])
             if root_permission:
                 return [item]
-            if item.user_permission(user_id).read:
+            if item.user_permission(user_id) > PermissionEnum.READ:
                 return [item]
             return []
 
-        permission_query = []
-        if user_id:
-            b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
-            permission_query += [
-                {"user_id": b_user_id},
-                {
-                    "$and": [
-                        {"permissions.user_id": b_user_id},
-                        {"permissions.read": True},
-                    ]
-                },
-            ]
+        if not user_id:
+            return []
+        
+        b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
+        permission_query = [
+            {"user_id": b_user_id},
+            {"permissions": {
+                "$elemMatch": {
+                    "user_id": b_user_id,
+                    "permission": {"$gt": PermissionEnum.READ},
+                }
+            }},
+        ]
 
         query = {
             "is_deleted": is_deleted,
@@ -119,6 +120,7 @@ class FileMetaData(BusinessOwnedEntity):
             query.pop("parent_id", None)
         if filename:
             query["filename"] = filename
+            query.pop("parent_id", None)
         if is_directory is not None:
             query["is_directory"] = is_directory
 
@@ -207,29 +209,23 @@ class FileMetaData(BusinessOwnedEntity):
             if perm.user_id == app_id:
                 return perm
 
-        return Permission(
-            uid=self.uid,
-            created_at=self.created_at,
-            updated_at=self.updated_at,
-            user_id=app_id,
-            read=False,
-            write=False,
-            delete=False,
-        )
+        return self.public_permission
 
     def user_permission(self, user_id: uuid.UUID | None) -> PermissionSchema:
         if user_id is None:
             return self.public_permission
-        
+
         if isinstance(user_id, str):
             user_id = uuid.UUID(user_id)
 
         if self.user_id == user_id:
             return Permission(
-                uid=self.uid,
                 created_at=self.created_at,
                 updated_at=self.updated_at,
                 user_id=user_id,
+                permission=PermissionEnum.OWNER,
+                
+                uid=self.uid,
                 read=True,
                 write=True,
                 delete=True,

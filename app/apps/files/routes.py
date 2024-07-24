@@ -75,7 +75,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         user_id: uuid.UUID | None = None,
         offset: int = 0,
         limit: int = 50,
-        parent_id: uuid.UUID = None,
+        parent_id: uuid.UUID | None = None,
         filename: str | None = None,
         filehash: str | None = None,
         is_deleted: bool = False,

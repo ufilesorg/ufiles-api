@@ -5,13 +5,15 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
-class BaseEntitySchema(BaseModel):
-    uid: uuid.UUID = Field(default_factory=uuid.uuid4, index=True, unique=True)
+class CoreEntitySchema(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now, index=True)
     updated_at: datetime = Field(default_factory=datetime.now)
     is_deleted: bool = False
     metadata: dict[str, Any] | None = None
+
+
+class BaseEntitySchema(CoreEntitySchema):
+    uid: uuid.UUID = Field(default_factory=uuid.uuid4, index=True, unique=True)
 
     @property
     def create_exclude_set(self) -> list[str]:
