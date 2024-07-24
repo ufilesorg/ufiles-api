@@ -3,20 +3,20 @@ from datetime import datetime
 from enum import Enum
 
 from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PermissionEnum(int, Enum):
-    NONE: 0
-    READ: 10
-    WRITE: 20
-    MANAGE: 30
-    DELETE: 40
-    OWNER: 100
+    NONE = 0
+    READ = 10
+    WRITE = 20
+    MANAGE = 30
+    DELETE = 40
+    OWNER = 100
 
 
 class PermissionSchema(CoreEntitySchema):
-    permission: PermissionEnum = PermissionEnum.NONE
+    permission: PermissionEnum = Field(default=PermissionEnum.NONE)
 
     @property
     def read(self):
