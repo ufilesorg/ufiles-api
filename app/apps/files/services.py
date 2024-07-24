@@ -19,7 +19,7 @@ from server.config import Settings
 from utils.b64tools import b64_encode_uuid_strip
 
 from .models import FileMetaData, ObjectMetaData
-from .schamas import PermissionEnum, PermissionSchema
+from .schemas import PermissionEnum, PermissionSchema
 
 
 def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) -> bool:
