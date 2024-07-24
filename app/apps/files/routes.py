@@ -71,15 +71,15 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
     async def list_items(
         self,
         request: Request,
+        business: Business = Depends(get_business),
+        user_id: uuid.UUID | None = None,
         offset: int = 0,
         limit: int = 50,
-        business: Business = Depends(get_business),
         parent_id: uuid.UUID = None,
         filename: str | None = None,
         filehash: str | None = None,
         is_deleted: bool = False,
         is_directory: bool | None = None,
-        user_id: uuid.UUID | None = None,
     ):
         try:
             user: UserData = await self.get_user(request)
@@ -116,14 +116,20 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         request: Request,
         uid: uuid.UUID,
         business: Business = Depends(get_business),
+        user_id: uuid.UUID | None = None,
     ):
         try:
             user: UserData = await self.get_user(request)
         except USSOException:
             user = None
 
+        if not user:
+            user_id = None
+        elif user and user.uid != business.user_id:
+            user_id = user.uid
+
         file = await FileMetaData.get_file(
-            user_id=user.uid if user else None, business_name=business.name, file_id=uid
+            user_id=user_id, business_name=business.name, file_id=uid
         )
 
         if file is None:

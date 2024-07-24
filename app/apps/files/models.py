@@ -76,7 +76,7 @@ class FileMetaData(BusinessOwnedEntity):
         offset = max(offset, 0)
         limit = min(limit, Settings.page_max_limit)
 
-        queries = [{"public_permission.read": True}]
+        queries = [] if file_id is None else [{"public_permission.read": True}]
         if user_id:
             b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
             queries += [
