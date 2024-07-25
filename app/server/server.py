@@ -102,6 +102,7 @@ origins = [
     "https://dashboard.pixiee.bot.inbeet.tech",
     "https://cmp-dev.liara.run",
     "https://app.pixiee.io",
+    "https://photopea.liara.run",
 ]
 app.add_middleware(
     CORSMiddleware,
