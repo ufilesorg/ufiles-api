@@ -1,15 +1,12 @@
 import uuid
 from datetime import datetime
 
-from beanie import Document, Insert, Replace, Save, SaveChanges, Update, before_event
+from beanie import (Document, Insert, Replace, Save, SaveChanges, Update,
+                    before_event)
 from pymongo import ASCENDING, IndexModel
 
-from .schemas import (
-    BaseEntitySchema,
-    BusinessEntitySchema,
-    BusinessOwnedEntitySchema,
-    OwnedEntitySchema,
-)
+from .schemas import (BaseEntitySchema, BusinessEntitySchema,
+                      BusinessOwnedEntitySchema, OwnedEntitySchema)
 from .tasks import TaskMixin
 
 
