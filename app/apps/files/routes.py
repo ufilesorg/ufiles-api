@@ -6,8 +6,7 @@ from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
 from apps.files.models import FileMetaData
-from apps.files.services import (generate_presigned_url, process_file,
-                                 stream_from_s3)
+from apps.files.services import generate_presigned_url, process_file, stream_from_s3
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -89,6 +88,8 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         if not user:
             user_id = None
         elif user and user.uid != business.user_id:
+            user_id = user.uid
+        elif user_id is None:
             user_id = user.uid
 
         params = dict(request.query_params)
