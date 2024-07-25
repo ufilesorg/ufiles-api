@@ -83,6 +83,8 @@ class FileMetaData(BusinessOwnedEntity):
             pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
 
             items = await cls.aggregate(pipeline).to_list()
+            if not items:
+                return []
             if len(items) > 1:
                 raise ValueError("Multiple files found")
             item = cls(**items[0])
