@@ -1,18 +1,17 @@
 import uuid
+
 import aiohttp
-from apps.business.handlers import create_dto_business, update_dto_business
+from fastapi import Request, Response
+from usso.fastapi import jwt_access_security
+
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
-from apps.business.routes import AbstractBusinessBaseRouter
-from core import exceptions
-from fastapi import Request, Response, Depends
-from usso.fastapi import jwt_access_security
-from usso import UserData
 from apps.files.routes import FilesRouter
+from core import exceptions
 
-from .models import Application
 from .image import extract_logo_colors
+from .models import Application
 
 
 class ApplicationRouter(AbstractBusinessBaseRouter[Application]):
@@ -70,7 +69,7 @@ async def color_app(
 ):
     business: Business = await get_business(request)
     if isinstance(uid, str):
-        uid = uuid.UUID(uid.strip('/'))
+        uid = uuid.UUID(uid.strip("/"))
     file = await FilesRouter().get_file(request, uid, business)
     return await extract_logo_colors(file)
 

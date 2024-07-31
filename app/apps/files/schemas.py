@@ -2,8 +2,9 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
 from pydantic import BaseModel, Field
+
+from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
 
 
 class PermissionEnum(int, Enum):
@@ -54,7 +55,7 @@ class FileMetaDataOut(BusinessOwnedEntitySchema):
     filehash: str | None = None
     filename: str
 
-    access_at: datetime 
+    access_at: datetime
 
     content_type: str
     size: int = 4096

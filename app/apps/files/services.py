@@ -10,11 +10,12 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
-from apps.business.models import AccessType, Business, Config
-from core.exceptions import BaseHTTPException
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
+
+from apps.business.models import AccessType, Business, Config
+from core.exceptions import BaseHTTPException
 from server.config import Settings
 from utils.b64tools import b64_encode_uuid_strip
 
@@ -71,10 +72,12 @@ def get_metadata(file: BytesIO, mime: str) -> dict:
     metadata = {}
     try:
         if mime.startswith("image/"):
-            from utils import imagetools
             from PIL import Image
 
+            from utils import imagetools
+
             image = Image.open(file)
+            file.seek(0)
             width, height = imagetools.get_width_height(image)
             metadata["width"] = width
             metadata["height"] = height
@@ -320,6 +323,8 @@ async def download_from_s3(s3_key, *, config: Config = None, **kwargs):
     async with session.client(**config.s3_client_kwargs) as s3_client:
         response = await s3_client.get_object(Bucket=config.s3_bucket, Key=s3_key)
         file_bytes = BytesIO(await response["Body"].read())
+
+    file_bytes.seek(0)
 
     return file_bytes
 

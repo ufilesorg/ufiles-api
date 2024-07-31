@@ -78,7 +78,47 @@ def rgb_to_lab(rgb):
     return lab
 
 
-def extract_color_palette(image: Image.Image, color_count=4, quality=1):
+def color_deviation(image: Image.Image) -> float:
+    # Convert the image to a numpy array
+    image = image.convert("RGBA")
+    img_array = np.array(image)
+
+    # Check if the image has an alpha channel
+    if img_array.shape[2] == 4:
+        # Extract the alpha channel
+        alpha_channel = img_array[:, :, 3]
+        # Create a mask for non-transparent pixels (alpha > 128)
+        non_transparent_mask = alpha_channel > 128
+    else:
+        # If no alpha channel, consider all pixels as non-transparent
+        non_transparent_mask = np.ones(
+            (img_array.shape[0], img_array.shape[1]), dtype=bool
+        )
+
+    # Extract the RGB channels
+    rgb_channels = img_array[:, :, :3]
+
+    # Create a mask for non-white pixels (not (r > 250 and g > 250 and b > 250))
+    non_white_mask = ~(
+        (rgb_channels[:, :, 0] > 250)
+        & (rgb_channels[:, :, 1] > 250)
+        & (rgb_channels[:, :, 2] > 250)
+    )
+
+    # Combine the masks
+    combined_mask = non_transparent_mask & non_white_mask
+
+    # Apply the mask to the RGB channels
+    filtered_pixels = rgb_channels[combined_mask].reshape((-1, 3))
+
+    # Calculate and return the standard deviation of the filtered pixels
+    return filtered_pixels.std(axis=0).mean() / 256
+    return filtered_pixels.std()
+
+
+def extract_color_palette(
+    image: Image.Image | BytesIO, color_count=4, quality=1, **kwargs
+):
     """Build a color palette.  We are using the median cut algorithm to
     cluster similar colors.
 
@@ -88,20 +128,30 @@ def extract_color_palette(image: Image.Image, color_count=4, quality=1):
                     greater the likelihood that colors will be missed.
     :return list: a list of tuple in the form (r, g, b)
     """
+    if isinstance(image, BytesIO):
+        image = Image.open(image)
     image = image.convert("RGBA")
+    width, height = image.size
+    pixel_count = width * height
     pixels = image.getdata()
-    valid_pixels = [(r, g, b) for r, g, b, a in pixels[::quality] if a >= 125]
-    # valid_pixels = [(r, g, b) for r, g, b, a in pixels if a >= 125 and r < 250 and g < 250 and b < 250]
+    valid_pixels = []
+    for i in range(0, pixel_count, quality):
+        r, g, b, a = pixels[i]
+        # If pixel is mostly opaque and not white
+        if a >= 125:
+            if kwargs.get("white", True) or (not (r > 250 and g > 250 and b > 250)):
+                valid_pixels.append((r, g, b))
 
     # Send array to quantize function which clusters values using median cut algorithm
     cmap = MMCQ.quantize(valid_pixels, color_count)
     colors = sorted(
         [
-            (cmap.vboxes.contents[i].get("vbox").count, color, rgb_to_hex(*color))
+            (cmap.vboxes.contents[i].get("vbox").count, color, rgb_to_hex(color))
             for i, color in enumerate(cmap.palette)
-        ]
+        ],
+        reverse=True,
     )
-    return [color[1] for color in colors]
+    return [color[1] for color in colors[:color_count]]
 
 
 def old_color_palette(image_bytes, n_colors=2, **kwargs) -> list[str]:
@@ -117,8 +167,15 @@ def old_color_palette(image_bytes, n_colors=2, **kwargs) -> list[str]:
     return dominant_colors
 
 
-def color_palette(image_bytes, n_colors=2, **kwargs):
-    colors = extract_color_palette(image_bytes, n_colors, **kwargs)
+def color_palette(image_bytes: BytesIO, n_colors: int = 4, **kwargs):
+    if isinstance(image_bytes, BytesIO):
+        image = Image.open(image_bytes)
+    elif isinstance(image_bytes, Image.Image):
+        image = image_bytes
+    color_variance = color_deviation(image)
+    colors = extract_color_palette(
+        image, n_colors, white=color_variance < 0.15, **kwargs
+    )
     complement_colors = []
     for color in colors:
         lab = rgb_to_lab(color)
@@ -127,7 +184,7 @@ def color_palette(image_bytes, n_colors=2, **kwargs):
         else:
             complement_colors.append(rgb_to_hex((255, 255, 255)))
 
-    results = [rgb_to_hex(color) for color in colors] + complement_colors
+    results = [rgb_to_hex(color) for color in colors][:2] + complement_colors[:2]
     return results
 
 
@@ -161,12 +218,21 @@ def add_watermark_to_image(
     return background
 
 
+def get_width_height(image: Image.Image) -> tuple[int, int]:
+    return image.size
+
+
 def get_aspect_ratio_str(width: int, height: int) -> str:
     fr = Fraction(height, width)
     return f"{fr.denominator}:{fr.numerator}"
 
 
-def resize_image(image: Image.Image, new_width=384, new_height=None) -> Image.Image:
+def resize_image(
+    image: Image.Image | BytesIO, new_width=384, new_height=None
+) -> Image.Image:
+    if isinstance(image, BytesIO):
+        image = Image.open(image)
+
     if new_width is None and new_height is None:
         return image
 
@@ -180,6 +246,19 @@ def resize_image(image: Image.Image, new_width=384, new_height=None) -> Image.Im
 
     resized_image = image.resize((new_width, new_height))
     return resized_image
+
+
+def resize_image_if_bigger(
+    image: Image.Image | BytesIO, new_width=384, new_height=None
+) -> Image.Image:
+    if isinstance(image, BytesIO):
+        image = Image.open(image)
+
+    original_width, _ = image.size
+    if original_width <= new_width:
+        return image
+    
+    return resize_image(image, new_width, new_height)
 
 
 def crop_image(image: Image.Image, sections=(2, 2), **kwargs) -> list[Image.Image]:
@@ -207,3 +286,21 @@ def convert_to_webp_bytes(image: Image.Image, quality=None) -> bytes:
 
 def convert_to_webp(image: Image.Image, quality=None) -> Image.Image:
     return Image.open(convert_to_webp_bytes(image, quality=quality))
+
+
+def svg_to_webp(
+    image_bytes: BytesIO, width: int = 512, height: int = 512
+) -> Image.Image:
+    import cairosvg
+
+    png = cairosvg.svg2png(
+        bytestring=image_bytes.getvalue(),
+        parent_width=width,
+        parent_height=height,
+    )
+
+    image = Image.open(BytesIO(png)).convert("RGBA")
+    webp = BytesIO()
+    image.save(webp, "webp")
+    webp.seek(0)
+    return Image.open(webp)

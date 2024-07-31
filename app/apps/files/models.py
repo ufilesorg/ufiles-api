@@ -2,10 +2,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
+
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from server.config import Settings
 
 from .schemas import Permission, PermissionEnum, PermissionSchema
@@ -131,7 +132,12 @@ class FileMetaData(BusinessOwnedEntity):
         if is_directory is not None:
             query["is_directory"] = is_directory
 
-        pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}, {"$sort": {sort_field: sort_direction}}]
+        pipeline = [
+            {"$match": query},
+            {"$skip": offset},
+            {"$limit": limit},
+            {"$sort": {sort_field: sort_direction}},
+        ]
 
         # Execute query and return list of items
         items = await cls.aggregate(pipeline).to_list()
@@ -243,7 +249,7 @@ class FileMetaData(BusinessOwnedEntity):
                 return perm
 
         return self.public_permission
-    
+
     async def delete(self, user_id: uuid.UUID):
         if not self.user_permission(user_id).delete:
             raise PermissionError("Permission denied")
@@ -256,8 +262,7 @@ class FileMetaData(BusinessOwnedEntity):
             )
             for file in files:
                 await file.delete(user_id)
-                
+
         self.is_deleted = True
         self.deleted_at = datetime.now()
         await self.save()
-        
