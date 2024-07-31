@@ -22,6 +22,8 @@ alembic
 
 pillow
 colorthief
-
+cairosvg
+numpy
+scikit-learn
 cryptography
 

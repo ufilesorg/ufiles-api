@@ -54,6 +54,8 @@ class FileMetaDataOut(BusinessOwnedEntitySchema):
     filehash: str | None = None
     filename: str
 
+    access_at: datetime 
+
     content_type: str
     size: int = 4096
     deleted_at: datetime | None = None

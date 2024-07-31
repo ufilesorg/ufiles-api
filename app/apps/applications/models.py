@@ -1,10 +1,10 @@
-from apps.base.models import BaseEntity
+from apps.base.models import BusinessEntity
 from pydantic import model_validator
 from pymongo import ASCENDING, IndexModel
 from server.config import Settings
 
 
-class Application(BaseEntity):
+class Application(BusinessEntity):
     name: str
     domain: str
 

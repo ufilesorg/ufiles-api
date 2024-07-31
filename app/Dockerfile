@@ -2,8 +2,10 @@ FROM python:3.11-slim AS fast-base
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    libmagic1 \
+
+RUN apt-get update \
+    && apt-get install -y libcairo2 libmagic1 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements2.txt ./

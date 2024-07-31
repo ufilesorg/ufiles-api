@@ -41,6 +41,7 @@ class FileMetaData(BusinessOwnedEntity):
     filehash: str | None = None
     filename: str
 
+    access_at: datetime = Field(default_factory=datetime.now)
     content_type: str = "inode/directory"
     size: int = 4096
     deleted_at: datetime | None = None
@@ -73,6 +74,8 @@ class FileMetaData(BusinessOwnedEntity):
         is_deleted: bool = False,
         is_directory: bool | None = None,
         root_permission: bool = False,
+        sort_field: str = "updated_at",  # default sort field for latest edited items
+        sort_direction: int = -1,  # descending order for latest items first
     ) -> list["FileMetaData"]:
         offset = max(offset, 0)
         limit = min(limit, Settings.page_max_limit)
@@ -128,7 +131,7 @@ class FileMetaData(BusinessOwnedEntity):
         if is_directory is not None:
             query["is_directory"] = is_directory
 
-        pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}]
+        pipeline = [{"$match": query}, {"$skip": offset}, {"$limit": limit}, {"$sort": {sort_field: sort_direction}}]
 
         # Execute query and return list of items
         items = await cls.aggregate(pipeline).to_list()
@@ -239,3 +242,21 @@ class FileMetaData(BusinessOwnedEntity):
                 return perm
 
         return self.public_permission
+    
+    async def delete(self, user_id: uuid.UUID):
+        if not self.user_permission(user_id).delete:
+            raise PermissionError("Permission denied")
+
+        if self.is_directory:
+            files = await self.list_files(
+                user_id=str(user_id),
+                business_name=self.business_name,
+                parent_id=self.uid,
+            )
+            for file in files:
+                await file.delete(user_id)
+                
+        self.is_deleted = True
+        self.deleted_at = datetime.now()
+        await self.save()
+        

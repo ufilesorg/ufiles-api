@@ -67,6 +67,24 @@ async def check_file(file: BytesIO, config: Config, **kwargs):
     return mime, size
 
 
+def get_metadata(file: BytesIO, mime: str) -> dict:
+    metadata = {}
+    try:
+        if mime.startswith("image/"):
+            from utils import imagetools
+            from PIL import Image
+
+            image = Image.open(file)
+            width, height = imagetools.get_width_height(image)
+            metadata["width"] = width
+            metadata["height"] = height
+            metadata["aspect_ratio"] = imagetools.get_aspect_ratio_str(width, height)
+    except:
+        pass
+
+    return metadata
+
+
 async def process_file(
     file: UploadFile,
     user_id: uuid.UUID,
@@ -94,9 +112,11 @@ async def process_file(
     else:
         filepath = file.filename
         file_bytes.name = file.filename
-    file_dir = "/".join(filepath.split("/")[:-1]) + "/"
+
+    file_metadata = {"file_dir": "/".join(filepath.split("/")[:-1]) + "/"}
 
     mime, size = await check_file(file_bytes, business.config)
+    file_metadata.update(get_metadata(file_bytes, mime))
 
     filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
     # basename, ext = os.path.splitext(file.filename)
@@ -114,8 +134,6 @@ async def process_file(
             if existed.parent_id == parent_id:
                 return existed
 
-    s3_key = filehash  # f"{business.name}/{user.b64id}/{filename}" if business.name else filename
-    s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{file_dir}{filehash}/{filename}"
     s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{filehash}"
 
     upload_task = asyncio.create_task(
@@ -152,7 +170,7 @@ async def process_file(
 
     metadata = FileMetaData(
         user_id=user_id,
-        metadata={"file_dir": file_dir},
+        metadata=file_metadata,
         business_name=business.name,
         filehash=filehash,
         filename=filename,

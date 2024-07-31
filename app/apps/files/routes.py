@@ -165,7 +165,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         stream: bool = True,
         details: bool = False,
     ):
-        file = await self.get_file(request, uid, business)
+        file: FileMetaData = await self.get_file(request, uid, business)
 
         if file.is_directory:
             return await self.list_items(
@@ -178,6 +178,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
 
         if details:
             return FileMetaDataOut(**file.model_dump())
+
+        file.access_at = datetime.now()
+        await file.save()
 
         if stream:
             return StreamingResponse(
@@ -394,6 +397,9 @@ async def download_file_endpoint(
             message="Directory is not downloadable",
         )
 
+    file.access_at = datetime.now()
+    await file.save()
+    
     if stream:
         return StreamingResponse(
             stream_from_s3(file.s3_key, config=business.config),

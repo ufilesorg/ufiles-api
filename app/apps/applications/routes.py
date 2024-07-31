@@ -1,10 +1,18 @@
+import uuid
 import aiohttp
+from apps.business.handlers import create_dto_business, update_dto_business
+from apps.business.middlewares import get_business
+from apps.business.models import Business
+from apps.business.routes import AbstractBusinessBaseRouter
 from apps.business.routes import AbstractBusinessBaseRouter
 from core import exceptions
-from fastapi import Request, Response
+from fastapi import Request, Response, Depends
 from usso.fastapi import jwt_access_security
+from usso import UserData
+from apps.files.routes import FilesRouter
 
 from .models import Application
+from .image import extract_logo_colors
 
 
 class ApplicationRouter(AbstractBusinessBaseRouter[Application]):
@@ -20,8 +28,17 @@ class ApplicationRouter(AbstractBusinessBaseRouter[Application]):
 router = ApplicationRouter().router
 
 
-async def proxy_request(request: Request, app_name: str, path: str, method: str):
-    app = await Application.find_one(Application.name == app_name)
+async def proxy_request(
+    request: Request,
+    app_name: str,
+    path: str,
+    method: str,
+):
+    business: Business = await get_business(request)
+
+    app = await Application.find_one(
+        Application.name == app_name, Application.business_name == business.name
+    )
     if not app:
         raise exceptions.BaseHTTPException(
             status_code=404,
@@ -46,8 +63,22 @@ async def proxy_request(request: Request, app_name: str, path: str, method: str)
             )
 
 
+@router.get("/colors/{uid}")
+async def color_app(
+    request: Request,
+    uid: uuid.UUID,
+):
+    business: Business = await get_business(request)
+    if isinstance(uid, str):
+        uid = uuid.UUID(uid.strip('/'))
+    file = await FilesRouter().get_file(request, uid, business)
+    return await extract_logo_colors(file)
+
+
 @router.get("/{app_name}/{path:path}")
 async def get_app(request: Request, app_name: str, path: str):
+    if app_name == "colors":
+        return await color_app(request, path)
     return await proxy_request(request, app_name, path, "GET")
 
 
