@@ -283,6 +283,8 @@ async def upload_file(
 
     form_data = dict(await request.form())
     form_data.pop("user_id", None)
+    form_data.pop("parent_id", None)
+    form_data.pop("filename", None)
     file = form_data.pop("file", file)
 
     file_metadata = await process_file(
@@ -290,6 +292,8 @@ async def upload_file(
         user_id=user_id,
         business=business,
         blocking=blocking,
+        parent_id=parent_id,
+        filename=filename,
         **form_data,
     )
     await file_metadata.save()
