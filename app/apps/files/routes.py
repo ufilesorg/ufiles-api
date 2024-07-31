@@ -254,9 +254,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
                     status_code=404, error="file_not_found", message="File not found"
                 )
 
-        file.is_deleted = True
-        file.deleted_at = datetime.now()
-        await file.save()
+        await file.delete(user_id=user.uid)
         return file
 
 
