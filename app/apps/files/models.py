@@ -190,6 +190,7 @@ class FileMetaData(BusinessOwnedEntity):
                 user_id=user_id,
                 business_name=business_name,
                 filename=part,
+                is_directory=True,
                 parent_id=parent_id,
             )
             if not files:

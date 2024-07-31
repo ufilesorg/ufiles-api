@@ -9,6 +9,7 @@ from server.config import Settings
 
 class AccessType(str, Enum):
     public = "public"
+    private = "private"
     stream = "stream"
     encoded = "encoded"
     singed = "signed"
