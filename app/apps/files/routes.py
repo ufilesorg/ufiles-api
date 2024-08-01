@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from apps.base.schemas import PaginatedResponse
-from apps.business.handlers import create_dto_business, update_dto_business
+from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
@@ -17,7 +17,7 @@ from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
 from utils import aionetwork
 
-from .schemas import FileMetaDataOut, MultiPartOut, PartUploadOut
+from .schemas import FileMetaDataOut, FileMetaDataUpdate, MultiPartOut, PartUploadOut
 
 
 class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
@@ -205,8 +205,8 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         request: Request,
         business: Business = Depends(get_business),
     ):
-        user = await self.get_user(request)
-        item = await create_dto_business(self.model)(
+        user: UserData = await self.get_user(request)
+        item: FileMetaData = await create_dto_business(self.model)(
             request, user, root_url=business.root_url
         )
 
@@ -217,19 +217,35 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         self,
         request: Request,
         uid,
+        update: FileMetaDataUpdate,
         business: Business = Depends(get_business),
     ):
-        # todo before change permission
-        user = await self.get_user(request)
-        item = await update_dto_business(self.model)(request, user)
-        if item is None:
+        user: UserData = await self.get_user(request)
+        item: FileMetaData = await self.get_file(request, uid, business)
+
+        if not item.user_permission(user.uid).write:
             raise BaseHTTPException(
-                status_code=404,
-                error="item_not_found",
-                message=f"{self.model.__name__.capitalize()} not found",
+                status_code=403,
+                error="forbidden",
+                message="You don't have permission to update this file",
             )
-        await item.save()
-        return item
+
+        if update.need_manage_permissions and not item.user_permission(user.uid).manage:
+            raise BaseHTTPException(
+                status_code=403,
+                error="forbidden",
+                message="You don't have permission to manage permissions",
+            )
+
+        new_item: FileMetaData = item.model_copy(
+            update=update.model_dump(exclude_unset=True, exclude=["permissions"])
+        )
+        new_item.public_permission.created_at = item.public_permission.created_at
+        for permission in update.permissions:
+            new_item.set_permission(permission)
+
+        await new_item.save()
+        return new_item
 
     async def delete_item(
         self,
@@ -237,10 +253,8 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         uid: uuid.UUID,
         business: Business = Depends(get_business),
     ):
-        user = await self.get_user(request)
-        file = await FileMetaData.get_file(
-            user_id=user.uid, business_name=business.name, file_id=uid
-        )
+        user: UserData = await self.get_user(request)
+        file: FileMetaData = await self.get_file(request, uid, business)
 
         if not file:
             raise BaseHTTPException(

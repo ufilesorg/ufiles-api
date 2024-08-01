@@ -136,6 +136,7 @@ async def process_file(
                 return existed
 
     s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{filehash}"
+    s3_key = f"{business.name}/{filehash}"
 
     upload_task = asyncio.create_task(
         manage_upload_to_s3(

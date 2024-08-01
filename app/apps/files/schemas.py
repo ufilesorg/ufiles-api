@@ -64,9 +64,16 @@ class FileMetaDataOut(BusinessOwnedEntitySchema):
     public_permission: PermissionSchema = PermissionSchema()
 
 
-class FileUploadMetaData(BaseModel):
+class FileMetaDataUpdate(BaseModel):
     parent_id: uuid.UUID | None = None
-    filename: str
+    filename: str | None = None
+
+    permissions: list[Permission] = []
+    public_permission: PermissionSchema | None = None
+
+    @property
+    def need_manage_permissions(self) -> bool:
+        return self.permissions or self.public_permission
 
 
 class MultiPartOut(BaseModel):

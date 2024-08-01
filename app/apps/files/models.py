@@ -32,6 +32,10 @@ class ObjectMetaData(BusinessEntity):
     async def delete(self):
         from .services import delete_file_from_s3
 
+        other_files = await FileMetaData.find({"s3_key": self.s3_key}).count()
+        if other_files != 0:
+            return
+
         business = await self.get_business()
         await delete_file_from_s3(self.s3_key, config=business.config)
         await super().delete()
@@ -269,10 +273,6 @@ class FileMetaData(BusinessOwnedEntity):
                 updated_at=self.updated_at,
                 user_id=user_id,
                 permission=PermissionEnum.OWNER,
-                uid=self.uid,
-                read=True,
-                write=True,
-                delete=True,
             )
 
         for perm in self.permissions:
@@ -280,6 +280,18 @@ class FileMetaData(BusinessOwnedEntity):
                 return perm
 
         return self.public_permission
+
+    async def set_permission(self, permission: Permission):
+        if permission.user_id == self.user_id:
+            raise PermissionError("Cannot change owner permission")
+
+        for perm in self.permissions:
+            if perm.user_id == permission.user_id:
+                perm.permission = permission.permission
+                perm.updated_at = datetime.now()
+                return
+
+        self.permissions.append(permission)
 
     async def delete(self, user_id: uuid.UUID):
         if not self.user_permission(user_id).delete:
