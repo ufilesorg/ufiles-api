@@ -237,15 +237,18 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
                 message="You don't have permission to manage permissions",
             )
 
-        new_item: FileMetaData = item.model_copy(
-            update=update.model_dump(exclude_unset=True, exclude=["permissions"])
-        )
-        new_item.public_permission.created_at = item.public_permission.created_at
+        if update.filename:
+            item.filename = update.filename
+        if update.parent_id:
+            item.parent_id = update.parent_id
+        if update.public_permission:
+            item.public_permission.permission = update.public_permission.permission
+            item.public_permission.updated_at = datetime.now()
         for permission in update.permissions:
-            new_item.set_permission(permission)
+            await item.set_permission(permission)
 
-        await new_item.save()
-        return new_item
+        await item.save()
+        return item
 
     async def delete_item(
         self,

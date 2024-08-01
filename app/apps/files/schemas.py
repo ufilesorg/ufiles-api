@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 
 from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PermissionEnum(int, Enum):
@@ -17,6 +17,15 @@ class PermissionEnum(int, Enum):
 
 class PermissionSchema(CoreEntitySchema):
     permission: PermissionEnum = Field(default=PermissionEnum.NONE)
+
+    @field_validator("permission", mode="before")
+    def validate_permission(cls, v):
+        if isinstance(v, str):
+            try:
+                return PermissionEnum[v.upper()]
+            except KeyError:
+                raise ValueError(f"Invalid permission string: {v}")
+        return v
 
     @property
     def read(self):
