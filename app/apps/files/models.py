@@ -141,7 +141,7 @@ class FileMetaData(BusinessOwnedEntity):
             query.pop("parent_id", None)
         if is_directory is not None:
             query["is_directory"] = is_directory
-        if is_deleted:
+        if is_deleted and parent_id is None:
             query.pop("parent_id", None)
 
         pipeline = [
@@ -168,9 +168,6 @@ class FileMetaData(BusinessOwnedEntity):
         )
         total_items = total_count_document[0].get("count", 0)
 
-        import logging
-
-        logging.info(result)
         return [cls(**item) for item in items], total_items
 
         # Execute query and return list of items
@@ -299,9 +296,10 @@ class FileMetaData(BusinessOwnedEntity):
 
         if self.is_directory:
             files, _ = await self.list_files(
-                user_id=str(user_id),
+                user_id=user_id,
                 business_name=self.business_name,
                 parent_id=self.uid,
+                is_deleted=self.is_deleted,
             )
             for file in files:
                 await file.delete(user_id)
@@ -315,4 +313,24 @@ class FileMetaData(BusinessOwnedEntity):
         await super().delete()
         other_files = await self.find({"s3_key": self.s3_key}).count()
         if other_files == 0:
-            await (await ObjectMetaData.find_one({"s3_key": self.s3_key})).delete()
+            object_meta = await ObjectMetaData.find_one({"s3_key": self.s3_key})
+            if object_meta:
+                await object_meta.delete()
+
+    async def restore(self, user_id: uuid.UUID):
+        if not self.user_permission(user_id).delete:
+            raise PermissionError("Permission denied")
+
+        if self.is_directory:
+            files, _ = await self.list_files(
+                user_id=user_id,
+                business_name=self.business_name,
+                parent_id=self.uid,
+            )
+            for file in files:
+                await file.restore(user_id)
+
+        if self.is_deleted:
+            self.is_deleted = False
+            self.deleted_at = None
+            await self.save()

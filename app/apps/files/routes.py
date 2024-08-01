@@ -237,9 +237,25 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
                 message="You don't have permission to manage permissions",
             )
 
+        if update.is_deleted is not None:
+            if item.is_deleted and not update.is_deleted:
+                await item.restore()
+            elif not item.is_deleted and update.is_deleted:
+                await item.delete()
         if update.filename:
             item.filename = update.filename
         if update.parent_id:
+            existing, _ = await FileMetaData.list_files(
+                user_id=user.uid,
+                business_name=business.name,
+                file_id=update.parent_id,
+            )
+            if not existing or not existing[0].is_directory:
+                raise BaseHTTPException(
+                    status_code=404,
+                    error="parent_not_found",
+                    message="Parent directory not found",
+                )
             item.parent_id = update.parent_id
         if update.public_permission:
             item.public_permission.permission = update.public_permission.permission

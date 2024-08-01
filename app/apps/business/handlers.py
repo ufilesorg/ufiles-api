@@ -15,15 +15,17 @@ def create_dto_business(cls: OT):
 
     async def dto(request: Request, user=None, **kwargs):
         business: Business = await get_business(request)
-        form_data = await request.json()
+        form_data: dict = await request.json()
         form_data.update(kwargs)
         if form_data.get("user_id"):
             if user.uid == business.user_id:
                 return cls(**form_data, business_name=business.name)
 
+        form_data["business_name"] = business.name
         if user:
             form_data["user_id"] = user.uid
-        return cls(**form_data, business_name=business.name)
+
+        return cls(**form_data)
 
     return dto
 

@@ -74,6 +74,7 @@ class FileMetaDataOut(BusinessOwnedEntitySchema):
 
 
 class FileMetaDataUpdate(BaseModel):
+    is_deleted: bool | None = None
     parent_id: uuid.UUID | None = None
     filename: str | None = None
 
