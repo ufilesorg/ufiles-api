@@ -71,6 +71,11 @@ class BusinessEntity(BusinessEntitySchema, BaseEntity):
             return None
         return items[0]
 
+    async def get_business(self):
+        from apps.business.models import Business
+
+        return await Business.get_by_name(self.business_name)
+
 
 class BusinessOwnedEntity(BusinessOwnedEntitySchema, BaseEntity):
 

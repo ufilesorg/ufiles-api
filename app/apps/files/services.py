@@ -10,12 +10,11 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
+from apps.business.models import AccessType, Business, Config
+from core.exceptions import BaseHTTPException
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
-
-from apps.business.models import AccessType, Business, Config
-from core.exceptions import BaseHTTPException
 from server.config import Settings
 from utils.b64tools import b64_encode_uuid_strip
 
@@ -73,7 +72,6 @@ def get_metadata(file: BytesIO, mime: str) -> dict:
     try:
         if mime.startswith("image/"):
             from PIL import Image
-
             from utils import imagetools
 
             image = Image.open(file)

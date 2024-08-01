@@ -1,7 +1,6 @@
+from apps.base.models import BusinessEntity
 from pydantic import model_validator
 from pymongo import ASCENDING, IndexModel
-
-from apps.base.models import BusinessEntity
 from server.config import Settings
 
 

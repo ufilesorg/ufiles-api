@@ -2,11 +2,10 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
-
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from server.config import Settings
 
 from .schemas import Permission, PermissionEnum, PermissionSchema
@@ -29,6 +28,13 @@ class ObjectMetaData(BusinessEntity):
         indexes = [
             IndexModel([("s3_key", ASCENDING)], unique=True),
         ]
+
+    async def delete(self):
+        from .services import delete_file_from_s3
+
+        business = await self.get_business()
+        await delete_file_from_s3(self.s3_key, config=business.config)
+        await super().delete()
 
 
 class FileMetaData(BusinessOwnedEntity):
@@ -157,8 +163,9 @@ class FileMetaData(BusinessOwnedEntity):
             result[0]["total_count"] if result and result[0]["total_count"] else [{}]
         )
         total_items = total_count_document[0].get("count", 0)
-        
+
         import logging
+
         logging.info(result)
         return [cls(**item) for item in items], total_items
 
@@ -287,6 +294,13 @@ class FileMetaData(BusinessOwnedEntity):
             for file in files:
                 await file.delete(user_id)
 
-        self.is_deleted = True
-        self.deleted_at = datetime.now()
-        await self.save()
+        if not self.is_deleted:
+            self.is_deleted = True
+            self.deleted_at = datetime.now()
+            await self.save()
+            return
+
+        await super().delete()
+        other_files = await self.find({"s3_key": self.s3_key}).count()
+        if other_files == 0:
+            await (await ObjectMetaData.find_one({"s3_key": self.s3_key})).delete()

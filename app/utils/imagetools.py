@@ -257,7 +257,7 @@ def resize_image_if_bigger(
     original_width, _ = image.size
     if original_width <= new_width:
         return image
-    
+
     return resize_image(image, new_width, new_height)
 
 

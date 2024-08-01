@@ -1,10 +1,9 @@
 import json
 from enum import Enum
 
+from apps.base.models import OwnedEntity
 from pydantic import BaseModel, model_validator
 from pymongo import ASCENDING, IndexModel
-
-from apps.base.models import OwnedEntity
 from server.config import Settings
 
 
@@ -107,6 +106,10 @@ class Business(OwnedEntity):
     @classmethod
     async def get_by_origin(cls, origin: str):
         return await cls.find_one(cls.domain == origin)
+
+    @classmethod
+    async def get_by_name(cls, name: str):
+        return await cls.find_one(cls.name == name)
 
     @model_validator(mode="before")
     def validate_domain(data: dict):

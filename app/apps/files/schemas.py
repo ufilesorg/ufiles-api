@@ -2,9 +2,8 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
-
 from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
+from pydantic import BaseModel, Field
 
 
 class PermissionEnum(int, Enum):

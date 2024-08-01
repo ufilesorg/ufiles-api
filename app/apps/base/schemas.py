@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -130,7 +129,9 @@ class Language(str, Enum):
 
 
 T = TypeVar("T", bound=BaseEntitySchema)
-class PaginatedResponse(Generic[T], BaseModel):
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
     items: list[T]
     total: int
     offset: int
