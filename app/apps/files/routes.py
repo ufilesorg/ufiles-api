@@ -11,6 +11,8 @@ from apps.business.handlers import create_dto_business, update_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
+from apps.base.schemas import PaginatedResponse
+
 from apps.files.models import FileMetaData
 from apps.files.services import generate_presigned_url, process_file, stream_from_s3
 from core.exceptions import BaseHTTPException
@@ -34,7 +36,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
             "/",
             self.list_items,
             methods=["GET"],
-            response_model=list[FileMetaDataOut],
+            response_model=PaginatedResponse[FileMetaDataOut],
         )
         self.router.add_api_route(
             "/{uid:uuid}",
@@ -83,7 +85,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
     ):
         try:
             user: UserData = await self.get_user(request)
-        except USSOException:
+        except USSOException as e:
+            if parent_id is None:
+                raise e
             user = None
 
         if not user:
@@ -106,7 +110,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
 
         limit = max(1, min(limit, Settings.page_max_limit))
 
-        items = await FileMetaData.list_files(
+        items, total_items = await FileMetaData.list_files(
             user_id,
             business.name,
             offset,
@@ -118,7 +122,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
             is_directory=is_directory,
             **params,
         )
-        return items
+        return PaginatedResponse(
+            items=items, offset=offset, limit=limit, total=total_items
+        )
 
     async def get_file(
         self,

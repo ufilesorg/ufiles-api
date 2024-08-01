@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any
+from typing import Any, Generic, Type, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -126,3 +127,11 @@ class BusinessOwnedEntitySchema(OwnedEntitySchema, BusinessEntitySchema):
 class Language(str, Enum):
     English = "English"
     Persian = "Persian"
+
+
+T = TypeVar("T", bound=BaseEntitySchema)
+class PaginatedResponse(Generic[T], BaseModel):
+    items: list[T]
+    total: int
+    offset: int
+    limit: int

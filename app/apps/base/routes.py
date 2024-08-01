@@ -1,13 +1,14 @@
 from typing import Any, Generic, Type, TypeVar
 
 import singleton
-from fastapi import APIRouter, BackgroundTasks, Request
+from fastapi import APIRouter, BackgroundTasks, Request, Query
 
 from core.exceptions import BaseHTTPException
 from server.config import Settings
 
 from .handlers import create_dto, update_dto
 from .models import BaseEntity, BaseEntityTaskMixin
+from .schemas import PaginatedResponse
 
 # Define a type variable
 T = TypeVar("T", bound=BaseEntity)
@@ -32,39 +33,54 @@ class AbstractBaseRouter(Generic[T], metaclass=singleton.Singleton):
             tags = [self.model.__name__]
         self.router = APIRouter(prefix=prefix, tags=tags, **kwargs)
 
-        self.config_routes()
+        self.config_schemas(**kwargs)
+        self.config_routes(**kwargs)
 
-    def config_routes(self):
+    def config_schemas(self, **kwargs):
+        self.list_response_schema = PaginatedResponse[self.model]
+        self.retrieve_response_schema = self.model
+        self.create_response_schema = self.model
+        self.update_response_schema = self.model
+        self.delete_response_schema = self.model
+
+        self.create_request_schema = self.model
+        self.update_request_schema = self.model
+
+    def config_routes(self, **kwargs):
         self.router.add_api_route(
             "/",
             self.list_items,
             methods=["GET"],
-            response_model=list[self.model],
+            response_model=self.list_response_schema,
+            status_code=200,
         )
         self.router.add_api_route(
             "/{uid:uuid}",
             self.retrieve_item,
             methods=["GET"],
-            response_model=self.model,
+            response_model=self.retrieve_response_schema,
+            status_code=200,
         )
         self.router.add_api_route(
             "/",
             self.create_item,
             methods=["POST"],
-            response_model=self.model,
+            response_model=self.create_response_schema,
             status_code=201,
         )
         self.router.add_api_route(
             "/{uid:uuid}",
             self.update_item,
             methods=["PATCH"],
-            response_model=self.model,
+            response_model=self.update_response_schema,
+            status_code=200,
         )
         self.router.add_api_route(
             "/{uid:uuid}",
             self.delete_item,
             methods=["DELETE"],
-            response_model=self.model,
+            response_model=self.delete_response_schema,
+            # status_code=204,
         )
 
     async def get_user(self, request: Request, *args, **kwargs):
@@ -75,11 +91,10 @@ class AbstractBaseRouter(Generic[T], metaclass=singleton.Singleton):
     async def list_items(
         self,
         request: Request,
-        offset: int = 0,
-        limit: int = 10,
+        offset: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=Settings.page_max_limit),
     ):
         user = await self.get_user(request)
-        limit = max(1, min(limit, Settings.page_max_limit))
 
         items_query = (
             self.model.get_query(user=user)
@@ -88,7 +103,13 @@ class AbstractBaseRouter(Generic[T], metaclass=singleton.Singleton):
             .limit(limit)
         )
         items = await items_query.to_list()
-        return items
+        total_items = await self.model.get_query(user=user).count()
+        return PaginatedResponse(
+            items=items,
+            total=total_items,
+            offset=offset,
+            limit=limit,
+        )
 
     async def retrieve_item(
         self,

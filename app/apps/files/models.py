@@ -77,7 +77,7 @@ class FileMetaData(BusinessOwnedEntity):
         root_permission: bool = False,
         sort_field: str = "updated_at",  # default sort field for latest edited items
         sort_direction: int = -1,  # descending order for latest items first
-    ) -> list["FileMetaData"]:
+    ) -> tuple[list["FileMetaData"], int]:
         offset = max(offset, 0)
         limit = min(limit, Settings.page_max_limit)
 
@@ -88,18 +88,18 @@ class FileMetaData(BusinessOwnedEntity):
 
             items = await cls.aggregate(pipeline).to_list()
             if not items:
-                return []
+                return [], 0
             if len(items) > 1:
                 raise ValueError("Multiple files found")
             item = cls(**items[0])
             if root_permission:
-                return [item]
+                return [item], 1
             if item.user_permission(user_id).read:
-                return [item]
-            return []
+                return [item], 1
+            return [], 0
 
         if not user_id:
-            return []
+            return [], 0
 
         b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
         permission_query = [
@@ -131,17 +131,41 @@ class FileMetaData(BusinessOwnedEntity):
             query.pop("parent_id", None)
         if is_directory is not None:
             query["is_directory"] = is_directory
+        if is_deleted:
+            query.pop("parent_id", None)
 
         pipeline = [
             {"$match": query},
-            {"$skip": offset},
-            {"$limit": limit},
-            {"$sort": {sort_field: sort_direction}},
+            {
+                "$facet": {
+                    "items": [
+                        {"$sort": {sort_field: sort_direction}},
+                        {"$skip": offset},
+                        {"$limit": limit},
+                    ],
+                    "total_count": [{"$count": "count"}],
+                }
+            },
+            # {"$skip": offset},
+            # {"$limit": limit},
+            # {"$sort": {sort_field: sort_direction}},
         ]
+
+        result = await cls.aggregate(pipeline).to_list()
+        items = result[0]["items"] if result else []
+        total_count_document = (
+            result[0]["total_count"] if result and result[0]["total_count"] else [{}]
+        )
+        total_items = total_count_document[0].get("count", 0)
+        
+        import logging
+        logging.info(result)
+        return [cls(**item) for item in items], total_items
 
         # Execute query and return list of items
         items = await cls.aggregate(pipeline).to_list()
-        return [cls(**item) for item in items]
+        total_items = await cls.find(query).count()
+        return [cls(**item) for item in items], total_items
 
     @classmethod
     async def get_file(
@@ -151,7 +175,7 @@ class FileMetaData(BusinessOwnedEntity):
         file_id: uuid.UUID,
         root_permission: bool = False,
     ) -> "FileMetaData":
-        files = await cls.list_files(
+        files, _ = await cls.list_files(
             user_id=user_id,
             business_name=business_name,
             file_id=file_id,
@@ -195,7 +219,7 @@ class FileMetaData(BusinessOwnedEntity):
         parts = filepath.parts
 
         for part in parts[:-1]:
-            files = await cls.list_files(
+            files, _ = await cls.list_files(
                 user_id=user_id,
                 business_name=business_name,
                 filename=part,
@@ -255,7 +279,7 @@ class FileMetaData(BusinessOwnedEntity):
             raise PermissionError("Permission denied")
 
         if self.is_directory:
-            files = await self.list_files(
+            files, _ = await self.list_files(
                 user_id=str(user_id),
                 business_name=self.business_name,
                 parent_id=self.uid,

@@ -126,7 +126,7 @@ async def process_file(
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
     filename = file_bytes.name
 
-    existing: list[FileMetaData] = await FileMetaData.list_files(
+    existing, _ = await FileMetaData.list_files(
         user_id=user_id,
         business_name=business.name,
         filehash=filehash,
