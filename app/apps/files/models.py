@@ -140,7 +140,8 @@ class FileMetaData(BusinessOwnedEntity):
             query.pop("parent_id", None)
         if filename:
             query["filename"] = filename
-            query.pop("parent_id", None)
+            if parent_id is None:
+                query.pop("parent_id", None)
         if is_directory is not None:
             query["is_directory"] = is_directory
         if is_deleted and parent_id is None:
