@@ -328,6 +328,7 @@ class FileMetaData(BusinessOwnedEntity):
                 user_id=user_id,
                 business_name=self.business_name,
                 parent_id=self.uid,
+                is_deleted=True,
             )
             for file in files:
                 await file.restore(user_id)
