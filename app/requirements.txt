@@ -10,6 +10,7 @@ python-magic
 debugpy
 ipython
 
+python-multipart
 boto3
 usso
 
