@@ -239,9 +239,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
 
         if update.is_deleted is not None:
             if item.is_deleted and not update.is_deleted:
-                await item.restore()
+                await item.restore(user.uid)
             elif not item.is_deleted and update.is_deleted:
-                await item.delete()
+                await item.delete(user.uid)
         if update.filename:
             item.filename = update.filename
         if update.parent_id:
