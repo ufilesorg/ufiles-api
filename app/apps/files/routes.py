@@ -419,6 +419,11 @@ download_router = APIRouter(
 
 
 @download_router.get(
+    "/{uid:uuid}/{path:path}",
+    include_in_schema=False,
+    # response_class=RedirectResponse | StreamingResponse,
+)
+@download_router.get(
     "/{uid:uuid}",
     include_in_schema=False,
     # response_class=RedirectResponse | StreamingResponse,
