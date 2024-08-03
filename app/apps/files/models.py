@@ -62,6 +62,8 @@ class FileMetaData(BusinessOwnedEntity):
 
     @property
     def url(self) -> str:
+        if not self.root_url:
+            return None
         base_url = (
             self.root_url
             if self.root_url.startswith("http")
