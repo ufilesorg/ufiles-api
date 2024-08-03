@@ -172,6 +172,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
     ):
         file: FileMetaData = await self.get_file(request, uid, business)
 
+        if details:
+            return FileMetaDataOut(**file.model_dump(), url=file.url)
+
         if file.is_directory:
             return await self.list_items(
                 request=request,
@@ -180,9 +183,6 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
                 business=business,
                 parent_id=file.uid,
             )
-
-        if details:
-            return FileMetaDataOut(**file.model_dump(), url=file.url)
 
         file.access_at = datetime.now()
         await file.save()
