@@ -2,6 +2,7 @@ from typing import TypeVar
 
 from apps.base.models import BusinessEntity
 from apps.base.routes import AbstractBaseRouter
+from apps.base.schemas import PaginatedResponse
 from apps.business.handlers import create_dto_business, update_dto_business
 from core.exceptions import BaseHTTPException
 from fastapi import Depends, Request
@@ -32,7 +33,15 @@ class AbstractBusinessBaseRouter(AbstractBaseRouter[T]):
             .limit(limit)
         )
         items = await items_query.to_list()
-        return items
+        total_items = await self.model.get_query(
+            business_name=business.name, user=user
+        ).count()
+        return PaginatedResponse(
+            items=items,
+            total=total_items,
+            offset=offset,
+            limit=limit,
+        )
 
     async def retrieve_item(
         self,
