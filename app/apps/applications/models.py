@@ -10,8 +10,12 @@ class Application(BusinessEntity):
 
     class Settings:
         indexes = [
-            IndexModel([("name", ASCENDING)], unique=True),
-            IndexModel([("domain", ASCENDING)], unique=True),
+            IndexModel(
+                [("name", ASCENDING), ("business_name", ASCENDING)], unique=True
+            ),
+            IndexModel(
+                [("domain", ASCENDING), ("business_name", ASCENDING)], unique=True
+            ),
         ]
 
     @classmethod
