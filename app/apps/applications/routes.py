@@ -1,15 +1,12 @@
-import uuid
-
 import aiohttp
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
-from apps.files.routes import FilesRouter
 from core import exceptions
 from fastapi import Request, Response
 from usso.fastapi import jwt_access_security
 
-from .image import extract_logo_colors
+from .applications import color_app
 from .models import Application
 
 
@@ -107,18 +104,6 @@ async def proxy_request(
                 content=content,
                 headers=dict(response.headers),
             )
-
-
-@router.get("/colors/{uid}")
-async def color_app(
-    request: Request,
-    uid: uuid.UUID,
-):
-    business: Business = await get_business(request)
-    if isinstance(uid, str):
-        uid = uuid.UUID(uid.strip("/"))
-    file = await FilesRouter().get_file(request, uid, business)
-    return await extract_logo_colors(file)
 
 
 @router.get("/{app_name}/{path:path}")
