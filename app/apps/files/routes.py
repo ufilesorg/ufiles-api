@@ -1,3 +1,4 @@
+from typing import Literal
 import uuid
 from datetime import datetime
 
@@ -6,8 +7,8 @@ from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
-from apps.files.models import FileMetaData
-from apps.files.services import generate_presigned_url, process_file, stream_from_s3
+from .models import FileMetaData
+from .services import generate_presigned_url, process_file, stream_from_s3, convert_image_from_s3
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -72,7 +73,6 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         self,
         request: Request,
         business: Business = Depends(get_business),
-        user_id: uuid.UUID | None = None,
         offset: int = 0,
         limit: int = 50,
         parent_id: uuid.UUID | None = None,
@@ -80,6 +80,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         filehash: str | None = None,
         is_deleted: bool = False,
         is_directory: bool | None = None,
+        user_id: uuid.UUID | None = None,
     ):
         try:
             user: UserData = await self.get_user(request)
@@ -169,6 +170,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
         business: Business = Depends(get_business),
         stream: bool = True,
         details: bool = False,
+        convert_format: Literal["png", "jpeg", "webp"] = None,
     ):
         file: FileMetaData = await self.get_file(request, uid, business)
 
@@ -186,6 +188,18 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
 
         file.access_at = datetime.now()
         await file.save()
+
+        if convert_format:
+            if file.content_type.startswith("image"):
+                file_byte = await convert_image_from_s3(file.s3_key, config=business.config, format=convert_format)
+                ext = convert_format.lower()
+                filename = f"{file.filename.rsplit('.', 1)[0]}.{ext}"
+                return StreamingResponse(
+                    file_byte,
+                    media_type=file.content_type,
+                    headers={"Content-Disposition": f"inline; filename={filename}"},
+                )
+            raise NotImplementedError("Convert is not implemented yet")
 
         if stream:
             return StreamingResponse(
@@ -433,6 +447,7 @@ async def download_file_endpoint(
     uid: uuid.UUID,
     business: Business = Depends(get_business),
     stream: bool = True,
+    convert_format: Literal["png", "jpeg", "webp"] = None,
 ):
     file = await FilesRouter().get_file(request, uid, business)
 
@@ -445,6 +460,20 @@ async def download_file_endpoint(
 
     file.access_at = datetime.now()
     await file.save()
+
+    if convert_format:
+        if file.content_type.startswith("image"):
+            file_byte = await convert_image_from_s3(
+                file.s3_key, config=business.config, format=convert_format
+            )
+            ext = convert_format.lower()
+            filename = f"{file.filename.rsplit('.', 1)[0]}.{ext}"
+            return StreamingResponse(
+                file_byte,
+                media_type=file.content_type,
+                headers={"Content-Disposition": f"attachment; filename={filename}"},
+            )
+        raise NotImplementedError("Convert is not implemented yet")
 
     if stream:
         return StreamingResponse(

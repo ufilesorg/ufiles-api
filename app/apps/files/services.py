@@ -339,6 +339,19 @@ async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
             yield chunk
 
 
+async def convert_image_from_s3(
+    s3_key, *, config: Config = None, format: str, **kwargs
+):
+    from PIL import Image
+    from utils import imagetools
+
+    file_bytes = await download_from_s3(s3_key, config=config)
+    image = Image.open(file_bytes)
+    converted_image = imagetools.convert_image_bytes(image, format)
+
+    return converted_image
+
+
 async def stream_from_s3_and_encrypt(
     s3_key, encryption_key: bytes, *, config=None, **kwargs
 ) -> AsyncGenerator[bytes, None]:
