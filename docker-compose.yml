@@ -12,7 +12,7 @@ services:
     networks:
       - mongo-net
       - traefik-net
-      - ufiles-net
+      - ufiles-stg-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${PROJECT_NAME}.entrypoints=web"
@@ -30,6 +30,6 @@ networks:
     external: true
   traefik-net:
     external: true
-  ufiles-net:
-    name: ufiles-net
+  ufiles-stg-net:
+    name: ufiles-stg-net
 
