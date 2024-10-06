@@ -85,7 +85,7 @@ class AbstractBaseRouter(Generic[T], metaclass=singleton.Singleton):
     async def get_user(self, request: Request, *args, **kwargs):
         if self.user_dependency is None:
             return None
-        return await self.user_dependency(request)
+        return self.user_dependency(request)
 
     async def list_items(
         self,
