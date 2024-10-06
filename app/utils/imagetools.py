@@ -306,7 +306,7 @@ def svg_to_webp(
     return Image.open(webp)
 
 
-def convert_image_bytes(image: Image.Image, format: str, quality = None) -> bytes:
+def convert_image_bytes(image: Image.Image, format: str, quality=None) -> bytes:
     image_bytes = BytesIO()
     color_mode = "RGB" if format != "PNG" else "RGBA"
     image.convert(color_mode).save(

@@ -1,14 +1,12 @@
-from typing import Literal
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from apps.base.schemas import PaginatedResponse
 from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
-from .models import FileMetaData
-from .services import generate_presigned_url, process_file, stream_from_s3, convert_image_from_s3
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -18,7 +16,14 @@ from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
 from utils import aionetwork
 
+from .models import FileMetaData
 from .schemas import FileMetaDataOut, FileMetaDataUpdate, MultiPartOut, PartUploadOut
+from .services import (
+    convert_image_from_s3,
+    generate_presigned_url,
+    process_file,
+    stream_from_s3,
+)
 
 
 class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
@@ -191,7 +196,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
 
         if convert_format:
             if file.content_type.startswith("image"):
-                file_byte = await convert_image_from_s3(file.s3_key, config=business.config, format=convert_format)
+                file_byte = await convert_image_from_s3(
+                    file.s3_key, config=business.config, format=convert_format
+                )
                 ext = convert_format.lower()
                 filename = f"{file.filename.rsplit('.', 1)[0]}.{ext}"
                 return StreamingResponse(

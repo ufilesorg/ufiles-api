@@ -96,13 +96,15 @@ async def general_exception_handler(request: fastapi.Request, exc: Exception):
 
 
 origins = [
-    "http://localhost:3000",
     "http://localhost:8000",
-    "https://pixiee.ufiles.org",
-    "https://dashboard.pixiee.bot.inbeet.tech",
-    "https://cmp-dev.liara.run",
+    "http://localhost:3000",
+    "https://cmp.liara.run",
     "https://app.pixiee.io",
-    "https://photopea.liara.run",
+    "https://stg.pixiee.io",
+    "https://cmp-dev.liara.run",
+    "https://pixiee.bot.inbeet.tech",
+    "https://picsee.bot.inbeet.tech",
+    "https://dashboard.pixiee.bot.inbeet.tech",
 ]
 app.add_middleware(
     CORSMiddleware,
