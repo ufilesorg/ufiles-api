@@ -7,8 +7,8 @@ from utils import imagetools
 
 async def extract_logo_colors(file: FileMetaData) -> list[str]:
     try:
-        if file.metadata.get("colors"):
-            return file.metadata["colors"]
+        if file.meta_data.get("colors"):
+            return file.meta_data["colors"]
 
         if file.content_type.split("/")[0] != "image":
             raise BaseHTTPException(
@@ -25,7 +25,7 @@ async def extract_logo_colors(file: FileMetaData) -> list[str]:
         image_bytes = imagetools.resize_image_if_bigger(image_bytes, new_width=512)
 
         colors = imagetools.color_palette(image_bytes)
-        file.metadata["colors"] = colors
+        file.meta_data["colors"] = colors
         await file.save()
 
         return colors

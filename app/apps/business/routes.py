@@ -1,11 +1,11 @@
 from typing import TypeVar
 
-from apps.base.models import BusinessEntity
-from apps.base.routes import AbstractBaseRouter
-from apps.base.schemas import PaginatedResponse
 from apps.business.handlers import create_dto_business, update_dto_business
 from core.exceptions import BaseHTTPException
 from fastapi import Depends, Request
+from fastapi_mongo_base.models import BusinessEntity
+from fastapi_mongo_base.routes import AbstractBaseRouter
+from fastapi_mongo_base.schemas import BaseEntitySchema, PaginatedResponse
 from server.config import Settings
 from usso.fastapi import jwt_access_security
 
@@ -13,9 +13,10 @@ from .middlewares import get_business
 from .models import Business
 
 T = TypeVar("T", bound=BusinessEntity)
+TS = TypeVar("TS", bound=BaseEntitySchema)
 
 
-class AbstractBusinessBaseRouter(AbstractBaseRouter[T]):
+class AbstractBusinessBaseRouter(AbstractBaseRouter[T, TS]):
     async def list_items(
         self,
         request: Request,
@@ -110,10 +111,11 @@ class AbstractBusinessBaseRouter(AbstractBaseRouter[T]):
         return item
 
 
-class BusinessRouter(AbstractBaseRouter[Business]):
+class BusinessRouter(AbstractBaseRouter[Business, Business]):
     def __init__(self):
         super().__init__(
             model=Business,
+            schema=Business,
             user_dependency=jwt_access_security,
             prefix="/businesses",
         )

@@ -18,8 +18,7 @@ aiohttp
 aiocache
 aiofiles
 
-sqlalchemy 
-alembic
+fastapi-mongo-base
 
 pillow
 colorthief

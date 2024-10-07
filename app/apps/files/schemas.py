@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from apps.base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
+from fastapi_mongo_base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
 from pydantic import BaseModel, Field, field_validator
 
 

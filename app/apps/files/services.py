@@ -68,7 +68,7 @@ async def check_file(file: BytesIO, config: Config, **kwargs):
 
 
 def get_metadata(file: BytesIO, mime: str) -> dict:
-    metadata = {}
+    meta_data = {}
     try:
         if mime.startswith("image/"):
             from PIL import Image
@@ -77,13 +77,13 @@ def get_metadata(file: BytesIO, mime: str) -> dict:
             image = Image.open(file)
             file.seek(0)
             width, height = imagetools.get_width_height(image)
-            metadata["width"] = width
-            metadata["height"] = height
-            metadata["aspect_ratio"] = imagetools.get_aspect_ratio_str(width, height)
+            meta_data["width"] = width
+            meta_data["height"] = height
+            meta_data["aspect_ratio"] = imagetools.get_aspect_ratio_str(width, height)
     except:
         pass
 
-    return metadata
+    return meta_data
 
 
 async def process_file(
@@ -170,9 +170,9 @@ async def process_file(
                 f"Invalid public_permission: {e}\n{kwargs.get('public_permission')}"
             )
 
-    metadata = FileMetaData(
+    meta_data = FileMetaData(
         user_id=user_id,
-        metadata=file_metadata,
+        meta_data=file_metadata,
         business_name=business.name,
         filehash=filehash,
         filename=filename,
@@ -183,7 +183,7 @@ async def process_file(
         parent_id=parent_id,
         public_permission=public_permission,
     )
-    return metadata
+    return meta_data
 
 
 @lru_cache

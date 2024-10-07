@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from apps.base.models import BusinessEntity, BusinessOwnedEntity
 from bson import UUID_SUBTYPE, Binary
+from fastapi_mongo_base.models import BusinessEntity, BusinessOwnedEntity
 from pydantic import Field
 from pymongo import ASCENDING, IndexModel
 from server.config import Settings

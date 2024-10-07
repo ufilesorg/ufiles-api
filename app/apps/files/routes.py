@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from apps.base.schemas import PaginatedResponse
 from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
@@ -10,6 +9,7 @@ from apps.business.routes import AbstractBusinessBaseRouter
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi_mongo_base.schemas import PaginatedResponse
 from server.config import Settings
 from usso import UserData
 from usso.exceptions import USSOException
@@ -26,10 +26,11 @@ from .services import (
 )
 
 
-class FilesRouter(AbstractBusinessBaseRouter[FileMetaData]):
+class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
     def __init__(self):
         super().__init__(
             model=FileMetaData,
+            schema=FileMetaDataOut,
             user_dependency=jwt_access_security,
             prefix="/f",
             tags=["files"],

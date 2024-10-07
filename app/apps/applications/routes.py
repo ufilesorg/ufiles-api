@@ -10,10 +10,11 @@ from .applications import color_app
 from .models import Application
 
 
-class ApplicationRouter(AbstractBusinessBaseRouter[Application]):
+class ApplicationRouter(AbstractBusinessBaseRouter[Application, Application]):
     def __init__(self):
         super().__init__(
             model=Application,
+            schema=Application,
             user_dependency=jwt_access_security,
             prefix="/apps",
             tags=["applications"],
@@ -61,7 +62,9 @@ async def proxy_request(
             message=f"Application {app_name} not found",
         )
 
-    url = f"{app.domain}/{path}"
+    # url = f"{app.domain}/{path}"
+    url = f"{app.domain}/v1/apps/{app.name}/{path}"
+    # logging.info(f"Proxying request to {url}")
     async with aiohttp.ClientSession() as session:
         async with session.request(
             method=method,
