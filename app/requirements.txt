@@ -1,29 +1,31 @@
 uvicorn
 fastapi
 pydantic
-beanie
 
 singleton_package
 json-advanced
 python-dotenv
-python-magic
 debugpy
 ipython
 
-python-multipart
-boto3
-usso
-
 aiohttp
-aiocache
 aiofiles
+aiocache
+usso[fastapi]
 
+beanie
 fastapi-mongo-base
+ufaas-fastapi-business
+
+python-multipart
+python-magic
+
+boto3
 
 pillow
 colorthief
 cairosvg
 numpy
 scikit-learn
-cryptography
 
+cryptography

@@ -205,7 +205,10 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                 return StreamingResponse(
                     file_byte,
                     media_type=file.content_type,
-                    headers={"Content-Disposition": f"inline; filename={filename}"},
+                    headers={
+                        "Content-Disposition": f"inline; filename={filename}",
+                        "Content-length": str(len(file_byte.getbuffer())),
+                    },
                 )
             raise NotImplementedError("Convert is not implemented yet")
 
@@ -213,7 +216,10 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             return StreamingResponse(
                 stream_from_s3(file.s3_key, config=business.config),
                 media_type=file.content_type,
-                headers={"Content-Disposition": f"inline; filename={file.filename}"},
+                headers={
+                    "Content-Disposition": f"inline; filename={file.filename}",
+                    "Content-length": str(file.size),
+                },
             )
 
         presigned_url = await generate_presigned_url(
@@ -434,10 +440,7 @@ async def finish_multipart(
     return file_metadata
 
 
-download_router = APIRouter(
-    prefix="/d",
-    tags=["files"],
-)
+download_router = APIRouter(prefix="/d", tags=["files"])
 
 
 @download_router.get(
@@ -479,7 +482,10 @@ async def download_file_endpoint(
             return StreamingResponse(
                 file_byte,
                 media_type=file.content_type,
-                headers={"Content-Disposition": f"attachment; filename={filename}"},
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}",
+                    "Content-length": str(len(file_byte.getbuffer())),
+                },
             )
         raise NotImplementedError("Convert is not implemented yet")
 
@@ -487,7 +493,10 @@ async def download_file_endpoint(
         return StreamingResponse(
             stream_from_s3(file.s3_key, config=business.config),
             media_type=file.content_type,
-            headers={"Content-Disposition": f"attachment; filename={file.filename}"},
+            headers={
+                "Content-Disposition": f"attachment; filename={file.filename}",
+                "Content-length": str(file.size),
+            },
         )
 
     presigned_url = await generate_presigned_url(file.s3_key, config=business.config)
