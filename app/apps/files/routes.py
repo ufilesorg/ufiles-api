@@ -14,12 +14,13 @@ from server.config import Settings
 from usso import UserData
 from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
-from utils import aionetwork
+from utils import aionetwork, imagetools
 
 from .models import FileMetaData
 from .schemas import FileMetaDataOut, FileMetaDataUpdate, MultiPartOut, PartUploadOut
 from .services import (
     convert_image_from_s3,
+    download_from_s3,
     generate_presigned_url,
     process_file,
     stream_from_s3,
@@ -177,6 +178,8 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         stream: bool = True,
         details: bool = False,
         convert_format: Literal["png", "jpeg", "webp"] = None,
+        width: int | None = None,
+        height: int | None = None,
     ):
         file: FileMetaData = await self.get_file(request, uid, business)
 
@@ -211,6 +214,20 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     },
                 )
             raise NotImplementedError("Convert is not implemented yet")
+
+        if width or height:
+            if file.content_type.startswith("image"):
+                file_byte = await download_from_s3(file.s3_key, config=business.config)
+                resized_image = imagetools.resize_image(file_byte, width, height)
+                image_bytes = imagetools.convert_to_webp_bytes(resized_image)
+                return StreamingResponse(
+                    image_bytes,
+                    media_type="image/webp",
+                    headers={
+                        "Content-Disposition": f"inline; filename={file.filename}",
+                        "Content-length": str(len(image_bytes.getbuffer())),
+                    },
+                )
 
         if stream:
             return StreamingResponse(

@@ -222,6 +222,19 @@ def get_width_height(image: Image.Image) -> tuple[int, int]:
     return image.size
 
 
+def calculate_width_height(
+    image: Image.Image, new_width: int, new_height: int
+) -> tuple[int, int]:
+    width, height = image.size
+    if new_width and new_height:
+        return new_width, new_height
+    if new_width:
+        return new_width, int(new_width * height / width)
+    if new_height:
+        return int(new_height * width / height), new_height
+    return width, height
+
+
 def get_aspect_ratio_str(width: int, height: int) -> str:
     fr = Fraction(height, width)
     return f"{fr.denominator}:{fr.numerator}"
@@ -273,7 +286,7 @@ def crop_image(image: Image.Image, sections=(2, 2), **kwargs) -> list[Image.Imag
     return parts
 
 
-def convert_to_webp_bytes(image: Image.Image, quality=None) -> bytes:
+def convert_to_webp_bytes(image: Image.Image, quality=None) -> BytesIO:
     image_bytes = BytesIO()
     image.convert("RGB").save(
         image_bytes,
