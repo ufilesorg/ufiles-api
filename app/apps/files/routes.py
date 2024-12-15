@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 from typing import Literal
-
+import re
 from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import RedirectResponse, StreamingResponse,Response
 from fastapi_mongo_base.schemas import PaginatedResponse
 from server.config import Settings
 from usso import UserData
@@ -230,12 +230,47 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                 )
 
         if stream:
+            range_header = request.headers.get("Range")
+            file_size = file.size
+
+            if range_header:
+                # Parse the Range header (e.g., "bytes=0-1023")
+                range_match = re.match(r"bytes=(\d+)-(\d*)", range_header)
+                if not range_match:
+                    raise BaseHTTPException(status_code=400, detail="Invalid Range header")
+
+                start = int(range_match.group(1))
+                end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+
+                if start >= file_size or end >= file_size:
+                    return Response(
+                        status_code=416,
+                        headers={"Content-Range": f"bytes */{file_size}"},
+                    )
+
+                chunk_size = end - start + 1
+                stream = stream_from_s3(
+                    file.s3_key, config=business.config, start=start, end=end
+                )
+
+                headers = {
+                    "Content-Range": f"bytes {start}-{end}/{file_size}",
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(chunk_size),
+                    "Content-Disposition": f"inline; filename={file.filename}",
+                    "Content-Type": file.content_type,
+                }
+
+                return StreamingResponse(stream, status_code=206, headers=headers)
+
+            # Full file streaming
             return StreamingResponse(
                 stream_from_s3(file.s3_key, config=business.config),
                 media_type=file.content_type,
                 headers={
                     "Content-Disposition": f"inline; filename={file.filename}",
                     "Content-length": str(file.size),
+                    "Accept-Ranges": "bytes",
                 },
             )
 
