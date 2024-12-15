@@ -1,14 +1,15 @@
+import re
 import uuid
 from datetime import datetime
 from typing import Literal
-import re
+
 from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
 from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
-from fastapi.responses import RedirectResponse, StreamingResponse,Response
+from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi_mongo_base.schemas import PaginatedResponse
 from server.config import Settings
 from usso import UserData
@@ -239,10 +240,14 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                 # Parse the Range header (e.g., "bytes=0-1023")
                 range_match = re.match(r"bytes=(\d+)-(\d*)", range_header)
                 if not range_match:
-                    raise BaseHTTPException(status_code=400, detail="Invalid Range header")
+                    raise BaseHTTPException(
+                        status_code=400, detail="Invalid Range header"
+                    )
 
                 start = int(range_match.group(1))
-                end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+                end = (
+                    int(range_match.group(2)) if range_match.group(2) else file_size - 1
+                )
 
                 if start >= file_size or end >= file_size:
                     return Response(
