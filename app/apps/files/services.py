@@ -222,7 +222,7 @@ async def manage_upload_to_s3(
     if objects:
         return objects[0]
 
-    if size > 100 * 1024 * 1024:
+    if size > 200 * 1024 * 1024:
         await upload_to_s3_multipart(
             file_bytes, s3_key, chunk_size=100 * 1024 * 1024, config=config, **kwargs
         )

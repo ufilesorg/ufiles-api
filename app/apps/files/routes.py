@@ -88,6 +88,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         is_deleted: bool = False,
         is_directory: bool | None = None,
         user_id: uuid.UUID | None = None,
+        content_type: str | None = None,
     ):
         try:
             user: UserData = await self.get_user(request)
@@ -211,6 +212,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     headers={
                         "Content-Disposition": f"inline; filename={filename}",
                         "Content-length": str(len(file_byte.getbuffer())),
+                        "Content-type": f"image/{convert_format}",
                     },
                 )
             raise NotImplementedError("Convert is not implemented yet")

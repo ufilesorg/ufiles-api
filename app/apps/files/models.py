@@ -30,14 +30,17 @@ class ObjectMetaData(BusinessEntity):
         ]
 
     async def delete(self):
+        from apps.business.models import Config
+
         from .services import delete_file_from_s3
 
         other_files = await FileMetaData.find({"s3_key": self.s3_key}).count()
         if other_files != 0:
             return
 
-        business = await self.get_business()
-        await delete_file_from_s3(self.s3_key, config=business.config)
+        # business = await self.get_business()
+        config = Config()
+        await delete_file_from_s3(self.s3_key, config=config)
         await super().delete()
 
 
@@ -87,6 +90,7 @@ class FileMetaData(BusinessOwnedEntity):
         is_deleted: bool = False,
         is_directory: bool | None = None,
         root_permission: bool = False,
+        content_type: str | None = None,
         sort_field: str = "updated_at",  # default sort field for latest edited items
         sort_direction: int = -1,  # descending order for latest items first
     ) -> tuple[list["FileMetaData"], int]:
@@ -146,6 +150,8 @@ class FileMetaData(BusinessOwnedEntity):
             query["is_directory"] = is_directory
         if is_deleted and parent_id is None:
             query.pop("parent_id", None)
+        if content_type:
+            query["content_type"] = content_type
 
         pipeline = [
             {"$match": query},
