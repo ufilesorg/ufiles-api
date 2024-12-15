@@ -259,6 +259,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     "Content-Length": str(chunk_size),
                     "Content-Disposition": f"inline; filename={file.filename}",
                     "Content-Type": file.content_type,
+                    "Transfer-Encoding": "chunked",
                 }
 
                 return StreamingResponse(stream, status_code=206, headers=headers)
@@ -271,6 +272,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     "Content-Disposition": f"inline; filename={file.filename}",
                     "Content-length": str(file.size),
                     "Accept-Ranges": "bytes",
+                    "Transfer-Encoding": "chunked",
                 },
             )
 
