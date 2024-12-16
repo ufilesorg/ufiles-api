@@ -1,10 +1,11 @@
 import aiohttp
+from fastapi import Request, Response
+from usso.fastapi import jwt_access_security
+
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from apps.business.routes import AbstractBusinessBaseRouter
 from core import exceptions
-from fastapi import Request, Response
-from usso.fastapi import jwt_access_security
 
 from .applications import color_app
 from .models import Application

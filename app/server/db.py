@@ -1,6 +1,7 @@
 from beanie import init_beanie
 from fastapi_mongo_base.models import BaseEntity
 from motor.motor_asyncio import AsyncIOMotorClient
+
 from utils.basic import get_all_subclasses
 
 from .config import Settings

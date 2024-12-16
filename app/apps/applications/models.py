@@ -1,6 +1,7 @@
 from fastapi_mongo_base.models import BusinessEntity
 from pydantic import model_validator
 from pymongo import ASCENDING, IndexModel
+
 from server.config import Settings
 
 
