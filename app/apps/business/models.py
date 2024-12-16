@@ -4,7 +4,6 @@ from enum import Enum
 from fastapi_mongo_base.models import OwnedEntity
 from pydantic import BaseModel, model_validator
 from pymongo import ASCENDING, IndexModel
-
 from server.config import Settings
 
 

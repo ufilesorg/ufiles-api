@@ -1,14 +1,13 @@
 from typing import TypeVar
 
+from apps.business.handlers import create_dto_business, update_dto_business
+from core.exceptions import BaseHTTPException
 from fastapi import Depends, Request
 from fastapi_mongo_base.models import BusinessEntity
 from fastapi_mongo_base.routes import AbstractBaseRouter
 from fastapi_mongo_base.schemas import BaseEntitySchema, PaginatedResponse
-from usso.fastapi import jwt_access_security
-
-from apps.business.handlers import create_dto_business, update_dto_business
-from core.exceptions import BaseHTTPException
 from server.config import Settings
+from usso.fastapi import jwt_access_security
 
 from .middlewares import get_business
 from .models import Business

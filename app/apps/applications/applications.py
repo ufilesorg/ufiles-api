@@ -1,9 +1,8 @@
 import uuid
 
-from fastapi import Request
-
 from apps.business.models import Business
 from apps.files.routes import FilesRouter
+from fastapi import Request
 
 from .image import extract_logo_colors
 
