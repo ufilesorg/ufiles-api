@@ -33,10 +33,10 @@ def check_file_type(file: BytesIO, accepted_mimes=Settings.ACCEPTED_FILE_TYPES) 
 
     file.seek(0)  # Reset the file pointer to the beginning.
 
-    if not mime_type or mime_type not in accepted_mimes:
-        raise BaseHTTPException(
-            status_code=400, error="unsupported", message="Unsupported file type"
-        )
+    # if not mime_type or mime_type not in accepted_mimes:
+    #     raise BaseHTTPException(
+    #         status_code=400, error="unsupported", message="Unsupported file type"
+    #     )
     return mime_type
 
 
