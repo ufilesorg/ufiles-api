@@ -1,20 +1,23 @@
-import aiohttp
+import httpx
 from apps.business.middlewares import get_business
 from apps.business.models import Business
-from apps.business.routes import AbstractBusinessBaseRouter
-from core import exceptions
 from fastapi import Request, Response
+from fastapi_mongo_base.core import exceptions
+
+# from apps.business.routes import AbstractBusinessBaseRouter
+from ufaas_fastapi_business.routes import AbstractBusinessBaseRouter
 from usso.fastapi import jwt_access_security
 
 from .applications import color_app
 from .models import Application
+from .schemas import ApplicationSchema
 
 
-class ApplicationRouter(AbstractBusinessBaseRouter[Application, Application]):
+class ApplicationRouter(AbstractBusinessBaseRouter[Application, ApplicationSchema]):
     def __init__(self):
         super().__init__(
             model=Application,
-            schema=Application,
+            schema=ApplicationSchema,
             user_dependency=jwt_access_security,
             prefix="/apps",
             tags=["applications"],
@@ -62,23 +65,25 @@ async def proxy_request(
             message=f"Application {app_name} not found",
         )
 
-    # url = f"{app.domain}/{path}"
     url = f"{app.domain}/v1/apps/{app.name}/{path}"
-    # logging.info(f"Proxying request to {url}")
-    async with aiohttp.ClientSession() as session:
-        async with session.request(
+    headers = dict(request.headers)
+    headers["x-original-host"] = request.url.hostname
+    headers.pop("host", None)
+    body = await request.body()
+
+    async with httpx.AsyncClient() as client:
+        response = await client.request(
             method=method,
             url=url,
             headers=request.headers,
             params=request.query_params,
-            data=await request.body() if method in ["POST", "PUT", "PATCH"] else None,
-        ) as response:
-            content = await response.read()
-            return Response(
-                status_code=response.status,
-                content=content,
-                headers=dict(response.headers),
-            )
+            data=body,
+        )
+        return Response(
+            status_code=response.status_code,
+            content=response.content,
+            headers=dict(response.headers),
+        )
 
 
 @router.get("/{app_name}/{path:path}")
@@ -98,11 +103,11 @@ async def put_app(request: Request, app_name: str, path: str):
     return await proxy_request(request, app_name, path, "PUT")
 
 
-@router.delete("/{app_name}/{path:path}")
-async def delete_app(request: Request, app_name: str, path: str):
-    return await proxy_request(request, app_name, path, "DELETE")
-
-
 @router.patch("/{app_name}/{path:path}")
 async def patch_app(request: Request, app_name: str, path: str):
     return await proxy_request(request, app_name, path, "PATCH")
+
+
+@router.delete("/{app_name}/{path:path}")
+async def delete_app(request: Request, app_name: str, path: str):
+    return await proxy_request(request, app_name, path, "DELETE")

@@ -3,13 +3,13 @@ from pydantic import model_validator
 from pymongo import ASCENDING, IndexModel
 from server.config import Settings
 
+from .schemas import ApplicationSchema
 
-class Application(BusinessEntity):
-    name: str
-    domain: str
+
+class Application(ApplicationSchema, BusinessEntity):
 
     class Settings:
-        indexes = [
+        indexes = BusinessEntity.Settings.indexes + [
             IndexModel(
                 [("name", ASCENDING), ("business_name", ASCENDING)], unique=True
             ),

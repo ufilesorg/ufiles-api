@@ -1,8 +1,8 @@
 from typing import TypeVar
 
 from apps.business.models import Business
-from core.exceptions import BaseHTTPException
 from fastapi import Request
+from fastapi_mongo_base.core.exceptions import BaseHTTPException
 from fastapi_mongo_base.models import BusinessEntity, BusinessOwnedEntity
 
 from .middlewares import get_business

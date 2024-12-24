@@ -25,7 +25,7 @@ class ObjectMetaData(BusinessEntity):
         keep_nulls = False
         validate_on_save = True
 
-        indexes = [
+        indexes = BusinessEntity.Settings.indexes + [
             IndexModel([("s3_key", ASCENDING)], unique=True),
         ]
 
@@ -62,6 +62,9 @@ class FileMetaData(BusinessOwnedEntity):
 
     permissions: list[Permission] = []
     public_permission: PermissionSchema = PermissionSchema()
+
+    class Settings:
+        indexes = BusinessOwnedEntity.Settings.indexes
 
     @property
     def url(self) -> str:

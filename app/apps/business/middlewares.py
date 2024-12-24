@@ -1,6 +1,6 @@
 from apps.business.models import Business
-from core.exceptions import BaseHTTPException
 from fastapi import Request
+from fastapi_mongo_base.core.exceptions import BaseHTTPException
 
 
 async def get_business(request: Request):

@@ -10,13 +10,14 @@ from typing import AsyncGenerator
 import aioboto3
 import aiofiles
 import magic
-from apps.business.models import AccessType, Business, Config
-from core.exceptions import BaseHTTPException
+from apps.business.models import Business
+from apps.business.schemas import AccessType, Config
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
+from fastapi_mongo_base.core.exceptions import BaseHTTPException
 from server.config import Settings
-from utils.b64tools import b64_encode_uuid_strip
+from usso.b64tools import b64_encode_uuid_strip
 
 from .models import FileMetaData, ObjectMetaData
 from .schemas import PermissionEnum, PermissionSchema

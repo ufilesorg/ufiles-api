@@ -6,16 +6,19 @@ from typing import Literal
 from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
-from apps.business.routes import AbstractBusinessBaseRouter
-from core.exceptions import BaseHTTPException
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
+from fastapi_mongo_base.core.exceptions import BaseHTTPException
 from fastapi_mongo_base.schemas import PaginatedResponse
+from fastapi_mongo_base.utils import aionetwork
 from server.config import Settings
+
+# from apps.business.routes import AbstractBusinessBaseRouter
+from ufaas_fastapi_business.routes import AbstractBusinessBaseRouter
 from usso import UserData
 from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
-from utils import aionetwork, imagetools
+from utils import imagetools
 
 from .models import FileMetaData
 from .schemas import FileMetaDataOut, FileMetaDataUpdate, MultiPartOut, PartUploadOut
@@ -104,6 +107,10 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             user_id = user.uid
         elif user_id is None:
             user_id = user.uid
+
+        import logging
+
+        logging.info(f"List items: {business.name} {user_id} {user}")
 
         params = dict(request.query_params)
         params.pop("user_id", None)
@@ -389,7 +396,7 @@ router = FilesRouter().router
 @router.post("/upload", response_model=FileMetaDataOut)
 async def upload_file(
     request: Request,
-    user: UserData = Depends(jwt_access_security),
+    # user: UserData = Depends(jwt_access_security),
     business: Business = Depends(get_business),
     user_id: uuid.UUID | None = Body(default=None),
     blocking: bool = False,
@@ -397,6 +404,9 @@ async def upload_file(
     parent_id: uuid.UUID | None = Body(default=None),
     filename: str | None = Body(default=None),
 ):
+    user: UserData = jwt_access_security(request)
+    business: Business = await get_business(request)
+
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
 
