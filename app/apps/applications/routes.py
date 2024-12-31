@@ -78,6 +78,7 @@ async def proxy_request(
             headers=request.headers,
             params=request.query_params,
             data=body,
+            timeout=None,
         )
         return Response(
             status_code=response.status_code,

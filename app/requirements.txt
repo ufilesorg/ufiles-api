@@ -11,18 +11,24 @@ ipython
 
 aiofiles
 aiocache
-usso[fastapi]
 
 beanie
 fastapi-mongo-base
 ufaas-fastapi-business
+
+apscheduler
+pytz
+pillow
+
+ufiles
+ufaas
+usso[fastapi]
 
 python-multipart
 python-magic
 
 boto3
 
-pillow
 colorthief
 cairosvg
 numpy

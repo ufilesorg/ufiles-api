@@ -108,10 +108,6 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         elif user_id is None:
             user_id = user.uid
 
-        import logging
-
-        logging.info(f"List items: {business.name} {user_id} {user}")
-
         params = dict(request.query_params)
         params.pop("user_id", None)
         params.pop("root_permission", None)
@@ -397,7 +393,7 @@ router = FilesRouter().router
 async def upload_file(
     request: Request,
     # user: UserData = Depends(jwt_access_security),
-    business: Business = Depends(get_business),
+    # business: Business = Depends(get_business),
     user_id: uuid.UUID | None = Body(default=None),
     blocking: bool = False,
     file: UploadFile = File(...),

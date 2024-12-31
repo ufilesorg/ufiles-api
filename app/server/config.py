@@ -9,7 +9,8 @@ from fastapi_mongo_base.core.config import Settings as BaseSettings
 class Settings(BaseSettings):
     """Server config settings."""
 
-    base_dir = Path(__file__).resolve().parent.parent
+    base_dir: str = Path(__file__).resolve().parent.parent
+    base_path: str = ""
 
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")
     S3_DOMAIN: str = os.getenv("S3_DOMAIN")
