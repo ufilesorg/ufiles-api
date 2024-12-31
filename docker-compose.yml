@@ -7,8 +7,8 @@ services:
       - .env
     volumes:
       - ./app:/app
-    ports:
-      - 3016:3000
+    # ports:
+    #   - 3016:3000
     networks:
       - mongo-net
       - traefik-net
