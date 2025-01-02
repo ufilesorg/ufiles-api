@@ -1,11 +1,13 @@
 """FastAPI server configuration."""
 
+import dataclasses
 import os
 from pathlib import Path
 
 from fastapi_mongo_base.core.config import Settings as BaseSettings
 
 
+@dataclasses.dataclass
 class Settings(BaseSettings):
     """Server config settings."""
 
