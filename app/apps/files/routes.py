@@ -203,6 +203,33 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         file.access_at = datetime.now()
         await file.save()
 
+        if width or height:
+            if file.content_type.startswith("image"):
+                image_bytes = await download_from_s3(
+                    file.s3_key, config=business.config
+                )
+                resized_image = imagetools.resize_image(image_bytes, width, height)
+                result_image = imagetools.convert_image_bytes(
+                    resized_image, convert_format if convert_format else "webp"
+                )
+                return StreamingResponse(
+                    result_image,
+                    media_type=(
+                        "image/webp"
+                        if convert_format is None
+                        else f"image/{convert_format}"
+                    ),
+                    headers={
+                        "Content-Disposition": f"inline; filename={file.filename}",
+                        "Content-length": str(len(result_image.getbuffer())),
+                        # "Content-type": (
+                        #     "image/webp"
+                        #     if convert_format is None
+                        #     else f"image/{convert_format}"
+                        # ),
+                    },
+                )
+
         if convert_format:
             if file.content_type.startswith("image"):
                 file_byte = await convert_image_from_s3(
@@ -220,20 +247,6 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     },
                 )
             raise NotImplementedError("Convert is not implemented yet")
-
-        if width or height:
-            if file.content_type.startswith("image"):
-                file_byte = await download_from_s3(file.s3_key, config=business.config)
-                resized_image = imagetools.resize_image(file_byte, width, height)
-                image_bytes = imagetools.convert_to_webp_bytes(resized_image)
-                return StreamingResponse(
-                    image_bytes,
-                    media_type="image/webp",
-                    headers={
-                        "Content-Disposition": f"inline; filename={file.filename}",
-                        "Content-length": str(len(image_bytes.getbuffer())),
-                    },
-                )
 
         if stream:
             range_header = request.headers.get("Range")
