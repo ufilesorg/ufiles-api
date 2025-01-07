@@ -91,6 +91,10 @@ class FileMetaData(BusinessOwnedEntity):
 
         return f"{base_url}/v1/f/{self.uid}/{self.filename}"
 
+    @property
+    def real_size(self) -> int:
+        return self.size + sum(item.get("size", 0) for item in self.history)
+
     @classmethod
     async def list_files(
         cls,
