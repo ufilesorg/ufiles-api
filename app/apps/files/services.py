@@ -188,7 +188,11 @@ async def process_file(
 
 
 async def change_file(
-    file_metadata: FileMetaData, file: UploadFile, blocking: bool = False, **kwargs
+    file_metadata: FileMetaData,
+    file: UploadFile,
+    blocking: bool = False,
+    overwrite: bool = False,
+    **kwargs,
 ):
     business = await Business.get(file_metadata.business_name)
     file_bytes = BytesIO(await file.read())
@@ -224,11 +228,14 @@ async def change_file(
     if blocking:
         await upload_task
 
-    file_metadata.history.append(
-        file_metadata.model_dump(
-            include=["s3_key", "filehash", "filename", "content_type", "size"]
+    if overwrite:
+        await delete_file_from_s3(file_metadata.s3_key, config=business.config)
+    else:
+        file_metadata.history.append(
+            file_metadata.model_dump(
+                include=["s3_key", "filehash", "filename", "content_type", "size"]
+            )
         )
-    )
     file_metadata.s3_key = s3_key
     file_metadata.size = size
     file_metadata.content_type = mime

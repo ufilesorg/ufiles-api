@@ -30,7 +30,7 @@ class ObjectMetaData(BusinessEntity):
         ]
 
     async def delete(self):
-        from apps.business.models import Config
+        from apps.business.schemas import Config
 
         from .services import delete_file_from_s3
 
@@ -42,6 +42,17 @@ class ObjectMetaData(BusinessEntity):
         config = Config()
         await delete_file_from_s3(self.s3_key, config=config)
         await super().delete()
+
+    @classmethod
+    async def delete_s3_key(cls, s3_key: str):
+        from apps.business.schemas import Config
+
+        from .services import delete_file_from_s3
+
+        config = Config()
+        await delete_file_from_s3(s3_key, config=config)
+        item = await cls.find_one({"s3_key": s3_key})
+        await item.delete()
 
 
 class FileMetaData(BusinessOwnedEntity):

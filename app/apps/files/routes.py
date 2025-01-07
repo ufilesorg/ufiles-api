@@ -329,6 +329,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         uid: uuid.UUID,
         blocking: bool = False,
         file: UploadFile = File(...),
+        overwrite: bool = False,
         business: Business = Depends(get_business),
     ):
         user: UserData = await self.get_user(request)
@@ -348,7 +349,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                 message="File is deleted",
             )
 
-        meta_data = await change_file(file=file, file_metadata=item, blocking=blocking)
+        meta_data = await change_file(
+            file=file, file_metadata=item, blocking=blocking, overwrite=overwrite
+        )
         return meta_data
 
     async def update_item(
