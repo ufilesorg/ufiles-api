@@ -187,6 +187,57 @@ async def process_file(
     return meta_data
 
 
+async def change_file(
+    file_metadata: FileMetaData, file: UploadFile, blocking: bool = False, **kwargs
+):
+    business = await Business.get(file_metadata.business_name)
+    file_bytes = BytesIO(await file.read())
+    filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
+    mime, size = await check_file(file_bytes, business.config)
+
+    existing, _ = await FileMetaData.list_files(
+        user_id=file_metadata.user_id,
+        business_name=business.name,
+        filehash=filehash,
+    )
+    if existing:
+        for existed in existing:
+            if existed.parent_id == file_metadata.parent_id:
+                return existed
+
+    s3_key = (
+        f"{business.name}/{b64_encode_uuid_strip(file_metadata.user_id)}/{filehash}"
+    )
+    s3_key = f"{business.name}/{filehash}"
+
+    upload_task = asyncio.create_task(
+        manage_upload_to_s3(
+            file_bytes,
+            s3_key,
+            business_name=business.name,
+            size=size,
+            filehash=filehash,
+            content_type=mime,
+            config=business.config,
+        )
+    )
+    if blocking:
+        await upload_task
+
+    file_metadata.history.append(
+        file_metadata.model_dump(
+            include=["s3_key", "filehash", "filename", "content_type", "size"]
+        )
+    )
+    file_metadata.s3_key = s3_key
+    file_metadata.size = size
+    file_metadata.content_type = mime
+    file_metadata.filehash = filehash
+    # file_metadata.filename = file.filename
+
+    return await file_metadata.save()
+
+
 @lru_cache
 def get_session(config: Config):
     return aioboto3.Session(**config.s3_session_kwargs)

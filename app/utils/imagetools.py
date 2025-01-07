@@ -1,16 +1,20 @@
+import base64
 import itertools
 from fractions import Fraction
 from io import BytesIO
+from typing import Literal
 
-import numpy as np
-from colorthief import MMCQ
+import httpx
+from aiocache import cached
 from PIL import Image
-from sklearn.cluster import KMeans
 
 
 def rgb_to_hex(rgb):
     """Convert RGB color to HEX."""
-    return "#{:02x}{:02x}{:02x}".format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+    r = min(255, max(0, rgb[0]))
+    g = min(255, max(0, rgb[1]))
+    b = min(255, max(0, rgb[2]))
+    return "#{:02x}{:02x}{:02x}".format(int(r), int(g), int(b))
 
 
 def rgb_to_xyz(rgb):
@@ -78,116 +82,6 @@ def rgb_to_lab(rgb):
     return lab
 
 
-def color_deviation(image: Image.Image) -> float:
-    # Convert the image to a numpy array
-    image = image.convert("RGBA")
-    img_array = np.array(image)
-
-    # Check if the image has an alpha channel
-    if img_array.shape[2] == 4:
-        # Extract the alpha channel
-        alpha_channel = img_array[:, :, 3]
-        # Create a mask for non-transparent pixels (alpha > 128)
-        non_transparent_mask = alpha_channel > 128
-    else:
-        # If no alpha channel, consider all pixels as non-transparent
-        non_transparent_mask = np.ones(
-            (img_array.shape[0], img_array.shape[1]), dtype=bool
-        )
-
-    # Extract the RGB channels
-    rgb_channels = img_array[:, :, :3]
-
-    # Create a mask for non-white pixels (not (r > 250 and g > 250 and b > 250))
-    non_white_mask = ~(
-        (rgb_channels[:, :, 0] > 250)
-        & (rgb_channels[:, :, 1] > 250)
-        & (rgb_channels[:, :, 2] > 250)
-    )
-
-    # Combine the masks
-    combined_mask = non_transparent_mask & non_white_mask
-
-    # Apply the mask to the RGB channels
-    filtered_pixels = rgb_channels[combined_mask].reshape((-1, 3))
-
-    # Calculate and return the standard deviation of the filtered pixels
-    return filtered_pixels.std(axis=0).mean() / 256
-    return filtered_pixels.std()
-
-
-def extract_color_palette(
-    image: Image.Image | BytesIO, color_count=4, quality=1, **kwargs
-):
-    """Build a color palette.  We are using the median cut algorithm to
-    cluster similar colors.
-
-    :param color_count: the size of the palette, max number of colors
-    :param quality: quality settings, 1 is the highest quality, the bigger
-                    the number, the faster the palette generation, but the
-                    greater the likelihood that colors will be missed.
-    :return list: a list of tuple in the form (r, g, b)
-    """
-    if isinstance(image, BytesIO):
-        image = Image.open(image)
-    image = image.convert("RGBA")
-    width, height = image.size
-    pixel_count = width * height
-    pixels = image.getdata()
-    valid_pixels = []
-    for i in range(0, pixel_count, quality):
-        r, g, b, a = pixels[i]
-        # If pixel is mostly opaque and not white
-        if a >= 125:
-            if kwargs.get("white", True) or (not (r > 250 and g > 250 and b > 250)):
-                valid_pixels.append((r, g, b))
-
-    # Send array to quantize function which clusters values using median cut algorithm
-    cmap = MMCQ.quantize(valid_pixels, color_count)
-    colors = sorted(
-        [
-            (cmap.vboxes.contents[i].get("vbox").count, color, rgb_to_hex(color))
-            for i, color in enumerate(cmap.palette)
-        ],
-        reverse=True,
-    )
-    return [color[1] for color in colors[:color_count]]
-
-
-def old_color_palette(image_bytes, n_colors=2, **kwargs) -> list[str]:
-    image = Image.open(image_bytes).convert("RGB")
-    np.array(image)
-    pixels = np.array(image).reshape(-1, 3)
-
-    kmeans = KMeans(n_clusters=n_colors)
-    kmeans.fit(pixels)
-
-    dominant_colors = np.array(kmeans.cluster_centers_, dtype="uint8")
-
-    return dominant_colors
-
-
-def color_palette(image_bytes: BytesIO, n_colors: int = 4, **kwargs):
-    if isinstance(image_bytes, BytesIO):
-        image = Image.open(image_bytes)
-    elif isinstance(image_bytes, Image.Image):
-        image = image_bytes
-    color_variance = color_deviation(image)
-    colors = extract_color_palette(
-        image, n_colors, white=color_variance < 0.15, **kwargs
-    )
-    complement_colors = []
-    for color in colors:
-        lab = rgb_to_lab(color)
-        if lab[0] > 50:
-            complement_colors.append(rgb_to_hex((0, 0, 0)))
-        else:
-            complement_colors.append(rgb_to_hex((255, 255, 255)))
-
-    results = [rgb_to_hex(color) for color in colors][:2] + complement_colors[:2]
-    return results
-
-
 def add_watermark_to_image(
     background_image_path: str | bytes | Image.Image,
     watermark_image_path: str,
@@ -218,23 +112,6 @@ def add_watermark_to_image(
     return background
 
 
-def get_width_height(image: Image.Image) -> tuple[int, int]:
-    return image.size
-
-
-def calculate_width_height(
-    image: Image.Image, new_width: int, new_height: int
-) -> tuple[int, int]:
-    width, height = image.size
-    if new_width and new_height:
-        return new_width, new_height
-    if new_width:
-        return new_width, int(new_width * height / width)
-    if new_height:
-        return int(new_height * width / height), new_height
-    return width, height
-
-
 def get_aspect_ratio_str(width: int, height: int) -> str:
     fr = Fraction(height, width)
     return f"{fr.denominator}:{fr.numerator}"
@@ -261,20 +138,7 @@ def resize_image(
     return resized_image
 
 
-def resize_image_if_bigger(
-    image: Image.Image | BytesIO, new_width=384, new_height=None
-) -> Image.Image:
-    if isinstance(image, BytesIO):
-        image = Image.open(image)
-
-    original_width, _ = image.size
-    if original_width <= new_width:
-        return image
-
-    return resize_image(image, new_width, new_height)
-
-
-def crop_image(image: Image.Image, sections=(2, 2), **kwargs) -> list[Image.Image]:
+def split_image(image: Image.Image, sections=(2, 2), **kwargs) -> list[Image.Image]:
     parts = []
     for i, j in itertools.product(range(sections[0]), range(sections[1])):
         x = j * image.width // sections[0]
@@ -286,40 +150,11 @@ def crop_image(image: Image.Image, sections=(2, 2), **kwargs) -> list[Image.Imag
     return parts
 
 
-def convert_to_webp_bytes(image: Image.Image, quality=None) -> BytesIO:
-    image_bytes = BytesIO()
-    image.convert("RGB").save(
-        image_bytes,
-        format="WebP",
-        **{"quality": quality} if quality else {},
-    )
-    image_bytes.seek(0)
-    return image_bytes
-
-
-def convert_to_webp(image: Image.Image, quality=None) -> Image.Image:
-    return Image.open(convert_to_webp_bytes(image, quality=quality))
-
-
-def svg_to_webp(
-    image_bytes: BytesIO, width: int = 512, height: int = 512
-) -> Image.Image:
-    import cairosvg
-
-    png = cairosvg.svg2png(
-        bytestring=image_bytes.getvalue(),
-        parent_width=width,
-        parent_height=height,
-    )
-
-    image = Image.open(BytesIO(png)).convert("RGBA")
-    webp = BytesIO()
-    image.save(webp, "webp")
-    webp.seek(0)
-    return Image.open(webp)
-
-
-def convert_image_bytes(image: Image.Image, format: str, quality=None) -> BytesIO:
+def convert_image_bytes(
+    image: Image.Image,
+    format: Literal["JPEG", "PNG", "WEBP", "BMP", "GIF"] = "JPEG",
+    quality=None,
+) -> BytesIO:
     image_bytes = BytesIO()
     color_mode = "RGB" if format != "PNG" else "RGBA"
     image.convert(color_mode).save(
@@ -329,3 +164,87 @@ def convert_image_bytes(image: Image.Image, format: str, quality=None) -> BytesI
     )
     image_bytes.seek(0)
     return image_bytes
+
+
+def strip_metadata(image: Image.Image) -> Image.Image:
+    """Strip metadata from the image by re-creating it in memory."""
+    stripped_buffer = BytesIO()
+    image.convert("RGB").save(stripped_buffer, format="JPEG")
+    stripped_buffer.seek(0)
+    return Image.open(stripped_buffer)
+
+
+def image_to_base64(
+    image: Image.Image,
+    format: Literal["JPEG", "PNG", "WEBP", "BMP", "GIF"] = "JPEG",
+    quality: int = 90,
+) -> str:
+    buffered = convert_image_bytes(image, format, quality)
+    base64_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    return f"data:image/{format};base64,{base64_str}"
+
+
+def load_from_base64(encoded: str) -> Image.Image:
+    """Load an image from a base64 encoded string."""
+    encoded = encoded.split(",")[1]
+    encoded += "=" * (4 - len(encoded) % 4)
+    buffered = BytesIO(base64.b64decode(encoded))
+    return Image.open(buffered)
+
+
+async def load_from_url(url: str) -> Image.Image:
+    """Load an image from a URL."""
+    async with httpx.AsyncClient() as client:
+        r = await client.get(url)
+        r.raise_for_status()
+    buffered = BytesIO(r.content)
+    return Image.open(buffered)
+
+
+def compress_image(image: Image.Image, max_size_kb: int) -> Image.Image:
+    """Compress image to fit within max_size_kb."""
+    while True:
+        buffered = BytesIO()
+        image.save(buffered, format="JPEG", optimize=True, quality=85)
+        encoded = base64.b64encode(buffered.getvalue()).decode()
+        if len(encoded) <= max_size_kb * 1024:
+            break
+        new_width = int(image.width * 4 / 5)
+        new_height = int(image.height * 4 / 5)
+        image = resize_image(image, new_width, new_height)
+    return image
+
+
+@cached(ttl=60 * 60 * 24)
+async def download_image(
+    url: str, max_width: int | None = None, max_size_kb: int | None = None
+) -> Image.Image:
+    """Fetch, resize, remove metadata, and compress an image to fit the specified constraints."""
+    # Load image from either base64 or URL
+    image = (
+        load_from_base64(url)
+        if url.startswith("data:image")
+        else await load_from_url(url)
+    )
+
+    # Prepare image (convert to RGB and strip metadata)
+    image = strip_metadata(image)
+
+    if max_size_kb is None and max_width is None:
+        return image
+
+    # Resize if needed
+    image = resize_image(image, max_width)
+
+    # Compress if needed
+    if max_size_kb is not None:
+        image = compress_image(image, max_size_kb)
+
+    return image
+
+
+async def download_image_base64(
+    url: str, max_width: int | None = None, max_size_kb: int | None = None
+) -> str:
+    image = await download_image(url, max_width, max_size_kb)
+    return image_to_base64(image)

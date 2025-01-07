@@ -23,6 +23,7 @@ from utils import imagetools
 from .models import FileMetaData
 from .schemas import FileMetaDataOut, FileMetaDataUpdate, MultiPartOut, PartUploadOut
 from .services import (
+    change_file,
     convert_image_from_s3,
     download_from_s3,
     generate_presigned_url,
@@ -71,6 +72,12 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             "/{uid:uuid}",
             self.update_item,
             methods=["PATCH"],
+            response_model=FileMetaDataOut,
+        )
+        self.router.add_api_route(
+            "/{uid:uuid}",
+            self.change_item,
+            methods=["PUT"],
             response_model=FileMetaDataOut,
         )
         self.router.add_api_route(
@@ -210,12 +217,12 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                 )
                 resized_image = imagetools.resize_image(image_bytes, width, height)
                 result_image = imagetools.convert_image_bytes(
-                    resized_image, convert_format if convert_format else "webp"
+                    resized_image, convert_format if convert_format else "jpeg"
                 )
                 return StreamingResponse(
                     result_image,
                     media_type=(
-                        "image/webp"
+                        "image/jpeg"
                         if convert_format is None
                         else f"image/{convert_format}"
                     ),
@@ -315,6 +322,34 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
 
         await item.save()
         return item
+
+    async def change_item(
+        self,
+        request: Request,
+        uid: uuid.UUID,
+        blocking: bool = False,
+        file: UploadFile = File(...),
+        business: Business = Depends(get_business),
+    ):
+        user: UserData = await self.get_user(request)
+        item: FileMetaData = await self.get_file(request, uid, business)
+
+        if not item.user_permission(user.uid).write:
+            raise BaseHTTPException(
+                status_code=403,
+                error="forbidden",
+                message="You don't have permission to update this file",
+            )
+
+        if item.is_deleted:
+            raise BaseHTTPException(
+                status_code=400,
+                error="file_deleted",
+                message="File is deleted",
+            )
+
+        meta_data = await change_file(file=file, file_metadata=item, blocking=blocking)
+        return meta_data
 
     async def update_item(
         self,
@@ -448,20 +483,21 @@ async def upload_file(
 async def upload_url(
     request: Request,
     url: str = Body(),
-    user: UserData = Depends(jwt_access_security),
-    business: Business = Depends(get_business),
     user_id: uuid.UUID | None = Body(default=None),
     blocking: bool = False,
     parent_id: uuid.UUID | None = Body(default=None),
     filename: str | None = Body(default=None),
 ):
+    user: UserData = jwt_access_security(request)
+    business: Business = await get_business(request)
+
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
 
     file = await aionetwork.aio_request_binary(url=url)
-    upload_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
+    uploading_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
     return await upload_file(
-        request, user, business, user_id, blocking, upload_file, parent_id, filename
+        request, user_id, blocking, uploading_file, parent_id, filename
     )
 
 

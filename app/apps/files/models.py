@@ -63,6 +63,8 @@ class FileMetaData(BusinessOwnedEntity):
     permissions: list[Permission] = []
     public_permission: PermissionSchema = PermissionSchema()
 
+    history: list[dict] = []
+
     class Settings:
         indexes = BusinessOwnedEntity.Settings.indexes
 
