@@ -1,8 +1,10 @@
 import httpx
 from apps.business.middlewares import get_business
 from apps.business.models import Business
-from fastapi import Request, Response
+from fastapi import Depends, Query, Request, Response
 from fastapi_mongo_base.core import exceptions
+from fastapi_mongo_base.schemas import PaginatedResponse
+from server.config import Settings
 
 # from apps.business.routes import AbstractBusinessBaseRouter
 from ufaas_fastapi_business.routes import AbstractBusinessBaseRouter
@@ -41,6 +43,29 @@ class ApplicationRouter(AbstractBusinessBaseRouter[Application, ApplicationSchem
             methods=["GET"],
             response_model=self.list_response_schema,
             status_code=200,
+        )
+        self.router.add_api_route(
+            "/search",
+            self.search,
+            methods=["GET"],
+            response_model=self.list_response_schema,
+            status_code=200,
+        )
+
+    async def search(
+        self,
+        request: Request,
+        q: str = Query(None, description="Search query"),
+        offset: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=Settings.page_max_limit),
+        business: Business = Depends(get_business),
+    ):
+        apps = await Application.search(business.name, q)
+        return PaginatedResponse(
+            items=apps[offset : offset + limit],
+            total=len(apps),
+            offset=offset,
+            limit=limit,
         )
 
 

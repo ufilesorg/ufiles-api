@@ -194,7 +194,7 @@ async def change_file(
     overwrite: bool = False,
     **kwargs,
 ):
-    business = await Business.get(file_metadata.business_name)
+    business = await Business.get_by_name(file_metadata.business_name)
     file_bytes = BytesIO(await file.read())
     filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
     mime, size = await check_file(file_bytes, business.config)
