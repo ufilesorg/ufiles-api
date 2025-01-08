@@ -36,7 +36,9 @@ class Application(ApplicationSchema, BusinessEntity):
             {"business_name": business_name, "$text": {"$search": query}}
         ).to_list()
         results = {str(result.id): result for result in regex_results + text_results}
-        return list(results.values())
+        if results:
+            return list(results.values())
+        return await cls.find(cls.name == "imagine").to_list()
 
     @classmethod
     async def get_by_origin(cls, origin: str):
