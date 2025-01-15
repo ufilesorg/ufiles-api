@@ -52,6 +52,15 @@ class ApplicationRouter(AbstractBusinessBaseRouter[Application, ApplicationSchem
             status_code=200,
         )
 
+    async def list_items(
+        self,
+        request: Request,
+        offset: int = Query(0, ge=0),
+        limit: int = Query(10, ge=1, le=Settings.page_max_limit),
+        business: Business = Depends(get_business),
+    ):
+        return await super().list_items(request, offset, limit, business)
+
     async def search(
         self,
         request: Request,
