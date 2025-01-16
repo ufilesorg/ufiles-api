@@ -52,25 +52,27 @@ class Permission(PermissionSchema):
     user_id: uuid.UUID
 
 
-class FileMetaDataOut(BusinessOwnedEntitySchema):
-    s3_key: str | None = None
-
+class FileMetaDataCreate(BaseModel):
     parent_id: uuid.UUID | None = None
     is_directory: bool = False
+    filename: str
+
+    permissions: list[Permission] = []
+    public_permission: PermissionSchema = PermissionSchema()
+
+
+class FileMetaDataOut(FileMetaDataCreate, BusinessOwnedEntitySchema):
+    s3_key: str | None = None
 
     url: str | None = None
 
     filehash: str | None = None
-    filename: str
 
     access_at: datetime
 
     content_type: str
     size: int = 4096
     deleted_at: datetime | None = None
-
-    permissions: list[Permission] = []
-    public_permission: PermissionSchema = PermissionSchema()
 
 
 class FileMetaDataUpdate(BaseModel):

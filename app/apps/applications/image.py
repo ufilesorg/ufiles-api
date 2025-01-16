@@ -3,7 +3,7 @@ import logging
 from apps.files.models import FileMetaData
 from apps.files.services import download_from_s3
 from fastapi_mongo_base.core.exceptions import BaseHTTPException
-from utils import imagetools
+from fastapi_mongo_base.utils import imagetools
 
 
 async def extract_logo_colors(file: FileMetaData) -> list[str]:

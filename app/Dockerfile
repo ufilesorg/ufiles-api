@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS fast-base
+FROM python:3.12-slim AS fast-base
 
 RUN apt-get update \
     && apt-get install -y libcairo2 libmagic1 \

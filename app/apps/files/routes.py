@@ -3,14 +3,13 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from apps.business.handlers import create_dto_business
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi_mongo_base.core.exceptions import BaseHTTPException
 from fastapi_mongo_base.schemas import PaginatedResponse
-from fastapi_mongo_base.utils import aionetwork
+from fastapi_mongo_base.utils import aionetwork, imagetools
 from server.config import Settings
 
 # from apps.business.routes import AbstractBusinessBaseRouter
@@ -18,10 +17,15 @@ from ufaas_fastapi_business.routes import AbstractBusinessBaseRouter
 from usso import UserData
 from usso.exceptions import USSOException
 from usso.fastapi import jwt_access_security
-from utils import imagetools
 
 from .models import FileMetaData
-from .schemas import FileMetaDataOut, FileMetaDataUpdate, MultiPartOut, PartUploadOut
+from .schemas import (
+    FileMetaDataCreate,
+    FileMetaDataOut,
+    FileMetaDataUpdate,
+    MultiPartOut,
+    PartUploadOut,
+)
 from .services import (
     change_file,
     convert_image_from_s3,
@@ -313,15 +317,12 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
     async def create_item(
         self,
         request: Request,
+        data: FileMetaDataCreate,
         business: Business = Depends(get_business),
     ):
-        user: UserData = await self.get_user(request)
-        item: FileMetaData = await create_dto_business(self.model)(
-            request, user, root_url=business.root_url
+        return await super().create_item(
+            request, data.model_dump(exclude_none=True, exclude_unset=True), business
         )
-
-        await item.save()
-        return item
 
     async def change_item(
         self,
