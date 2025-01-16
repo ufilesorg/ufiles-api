@@ -320,9 +320,15 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         data: FileMetaDataCreate,
         business: Business = Depends(get_business),
     ):
-        return await super().create_item(
-            request, data.model_dump(exclude_none=True, exclude_unset=True), business
+        user_id = await self.get_user_id(request)
+        item = FileMetaData(
+            user_id=user_id,
+            business_name=business.name,
+            access_at=datetime.now(),
+            **data.model_dump(exclude_none=True, exclude_unset=True),
         )
+        await item.save()
+        return item
 
     async def change_item(
         self,
