@@ -55,6 +55,12 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             response_model=PaginatedResponse[FileMetaDataOut],
         )
         self.router.add_api_route(
+            "/volume",
+            self.get_volume,
+            methods=["GET"],
+            # response_model=VolumeOut,
+        )
+        self.router.add_api_route(
             "/{uid:uuid}",
             self.retrieve_item,
             methods=["GET"],
@@ -148,6 +154,15 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         return PaginatedResponse(
             items=items, offset=offset, limit=limit, total=total_items
         )
+
+    async def get_volume(
+        self,
+        request: Request,
+        business: Business = Depends(get_business),
+    ):
+        user: UserData = await self.get_user(request)
+        volume = await FileMetaData.get_volume(user.uid, business.name)
+        return {"volume": volume}
 
     async def get_file(
         self,

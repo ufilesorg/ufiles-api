@@ -364,3 +364,30 @@ class FileMetaData(BusinessOwnedEntity):
             self.is_deleted = False
             self.deleted_at = None
             await self.save()
+
+    @classmethod
+    async def get_volume(cls, user_id: uuid.UUID, business_name: str) -> int:
+        """
+        Calculate the total file size for a user with the specified business name.
+
+        :param user_id: UUID of the user
+        :param business_name: Name of the business
+        :return: Total size of the files for the user and business
+        """
+        b_user_id = Binary.from_uuid(user_id, UUID_SUBTYPE)
+        pipeline = [
+            {
+                "$match": {
+                    "user_id": b_user_id,
+                    "business_name": business_name,
+                    "is_deleted": False,
+                }
+            },
+            {"$group": {"_id": None, "total_size": {"$sum": "$size"}}},
+        ]
+
+        result = await cls.aggregate(pipeline).to_list(length=1)
+
+        if result:
+            return result[0].get("total_size", 0)
+        return 0
