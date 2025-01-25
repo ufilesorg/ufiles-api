@@ -246,7 +246,7 @@ async def change_file(
 
 
 @lru_cache
-def get_session(config: Config):
+def get_session(config: Config) -> aioboto3.Session:
     return aioboto3.Session(**config.s3_session_kwargs)
 
 
@@ -391,11 +391,25 @@ async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
     config = config or Config()
     session = get_session(config)
 
-    async with session.client(**config.s3_client_kwargs) as s3_client:
-        response = await s3_client.get_object(Bucket=config.s3_bucket, Key=s3_key)
+    # Get start and end bytes from kwargs if present
+    start = kwargs.get("start", None)
+    end = kwargs.get("end", None)
 
-        async for chunk in response["Body"].iter_chunks():
-            yield chunk
+    async with session.client(**config.s3_client_kwargs) as s3_client:
+        # Add Range parameter if start/end are specified
+        get_object_kwargs = {"Bucket": config.s3_bucket, "Key": s3_key}
+        if start is not None and end is not None:
+            get_object_kwargs["Range"] = f"bytes={start}-{end}"
+
+        response = await s3_client.get_object(**get_object_kwargs)
+
+        # Stream the response body
+        body = response["Body"]
+        try:
+            async for chunk in body.iter_chunks():
+                yield chunk
+        finally:
+            await body.close()
 
 
 async def convert_image_from_s3(
