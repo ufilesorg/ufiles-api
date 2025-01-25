@@ -2,6 +2,7 @@ import re
 import uuid
 from datetime import datetime
 from typing import Literal
+from urllib.parse import quote
 
 from apps.business.middlewares import get_business
 from apps.business.models import Business
@@ -231,7 +232,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                         else f"image/{convert_format}"
                     ),
                     headers={
-                        "Content-Disposition": f"inline; filename={file.filename}",
+                        "Content-Disposition": f"inline; filename*=UTF-8''{quote(file.filename)}",
                         "Content-length": str(len(result_image.getbuffer())),
                         # "Content-type": (
                         #     "image/webp"
@@ -252,7 +253,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     file_byte,
                     media_type=file.content_type,
                     headers={
-                        "Content-Disposition": f"inline; filename={filename}",
+                        "Content-Disposition": f"inline; filename*=UTF-8''{quote(filename)}",
                         "Content-length": str(len(file_byte.getbuffer())),
                         "Content-type": f"image/{convert_format}",
                     },
@@ -291,7 +292,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     "Content-Range": f"bytes {start}-{end}/{file_size}",
                     "Accept-Ranges": "bytes",
                     "Content-Length": str(chunk_size),
-                    "Content-Disposition": f"inline; filename={file.filename}",
+                    "Content-Disposition": f"inline; filename*=UTF-8''{quote(file.filename)}",
                     "Content-Type": file.content_type,
                 }
 
@@ -302,7 +303,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                 stream_from_s3(file.s3_key, config=business.config),
                 media_type=file.content_type,
                 headers={
-                    "Content-Disposition": f"inline; filename={file.filename}",
+                    "Content-Disposition": f"inline; filename*=UTF-8''{quote(file.filename)}",
                     "Content-length": str(file.size),
                     "Accept-Ranges": "bytes",
                 },
@@ -607,7 +608,7 @@ async def download_file_endpoint(
                 file_byte,
                 media_type=file.content_type,
                 headers={
-                    "Content-Disposition": f"attachment; filename={filename}",
+                    "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}",
                     "Content-length": str(len(file_byte.getbuffer())),
                 },
             )
@@ -618,7 +619,7 @@ async def download_file_endpoint(
             stream_from_s3(file.s3_key, config=business.config),
             media_type=file.content_type,
             headers={
-                "Content-Disposition": f"attachment; filename={file.filename}",
+                "Content-Disposition": f"attachment; filename*=UTF-8''{quote(file.filename)}",
                 "Content-length": str(file.size),
             },
         )
