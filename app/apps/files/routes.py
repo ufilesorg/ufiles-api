@@ -310,7 +310,6 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
                     "Content-Disposition": f"inline; filename*=UTF-8''{quote(file.filename)}",
                     "Content-Type": file.content_type,
                     # httpchecksum
-                    
                 }
 
                 return StreamingResponse(stream, status_code=206, headers=headers)
