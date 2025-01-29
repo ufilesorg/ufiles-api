@@ -209,7 +209,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         business: Business = Depends(get_business),
         stream: bool = True,
         details: bool = False,
-        convert_format: Literal["png", "jpeg", "webp"] = None,
+        convert_format: Literal["png", "jpeg", "webp"] | None = None,
         width: int | None = None,
         height: int | None = None,
     ):

@@ -388,28 +388,36 @@ async def download_from_s3(s3_key, *, config: Config = None, **kwargs):
 
 
 async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
-    config = config or Config()
-    session = get_session(config)
+    try:
+        config = config or Config()
+        session = get_session(config)
+        # Get start and end bytes from kwargs if present
+        start = kwargs.get("start", None)
+        end = kwargs.get("end", None)
 
-    # Get start and end bytes from kwargs if present
-    start = kwargs.get("start", None)
-    end = kwargs.get("end", None)
+        async with session.client(**config.s3_client_kwargs) as s3_client:
+            # Add Range parameter if start/end are specified
+            get_object_kwargs = {"Bucket": config.s3_bucket, "Key": s3_key}
+            if start is not None and end is not None:
+                get_object_kwargs["Range"] = f"bytes={start}-{end}"
 
-    async with session.client(**config.s3_client_kwargs) as s3_client:
-        # Add Range parameter if start/end are specified
-        get_object_kwargs = {"Bucket": config.s3_bucket, "Key": s3_key}
-        if start is not None and end is not None:
-            get_object_kwargs["Range"] = f"bytes={start}-{end}"
+            response = await s3_client.get_object(**get_object_kwargs)
 
-        response = await s3_client.get_object(**get_object_kwargs)
+            # Stream the response body
+            body = response["Body"]
+            try:
+                async for chunk in body.iter_chunks():
+                    yield chunk
+            finally:
+                pass
+    except Exception as e:
+        import traceback
 
-        # Stream the response body
-        body = response["Body"]
-        try:
-            async for chunk in body.iter_chunks():
-                yield chunk
-        finally:
-            await body.close()
+        logging.error(f"Error streaming from S3:")
+        logging.error(traceback.format_exc())
+        logging.error(f"s3_key: {s3_key}")
+        logging.error(f"type(e): {type(e)}")
+        logging.error(f"e: {e}")
 
 
 async def convert_image_from_s3(
