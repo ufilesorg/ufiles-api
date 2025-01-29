@@ -409,15 +409,14 @@ async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
                 async for chunk in body.iter_chunks():
                     yield chunk
             finally:
-                pass
+                body.close()
     except Exception as e:
         import traceback
 
-        logging.error(f"Error streaming from S3:")
-        logging.error(traceback.format_exc())
-        logging.error(f"s3_key: {s3_key}")
-        logging.error(f"type(e): {type(e)}")
-        logging.error(f"e: {e}")
+        traceback_str = "".join(traceback.format_tb(e.__traceback__))
+        logging.error(f"Error streaming from S3: {s3_key=}")
+        logging.error(traceback_str)
+        logging.error(f"{type(e)=} {e=}")
 
 
 async def convert_image_from_s3(
