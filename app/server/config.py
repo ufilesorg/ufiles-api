@@ -4,11 +4,11 @@ import dataclasses
 import os
 from pathlib import Path
 
-from fastapi_mongo_base.core.config import Settings as BaseSettings
+from fastapi_mongo_base.core import config
 
 
 @dataclasses.dataclass
-class Settings(BaseSettings):
+class Settings(config.Settings):
     """Server config settings."""
 
     base_dir: str = Path(__file__).resolve().parent.parent
