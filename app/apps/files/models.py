@@ -9,6 +9,7 @@ from pymongo import ASCENDING, IndexModel
 from server.config import Settings
 
 from .schemas import Permission, PermissionEnum, PermissionSchema
+from .statics import get_icon_from_mime_type
 
 
 class ObjectMetaData(BusinessEntity):
@@ -70,7 +71,7 @@ class FileMetaData(BusinessOwnedEntity):
     content_type: str = "inode/directory"
     size: int = 4096
     deleted_at: datetime | None = None
-    thumbnail: str | None = None
+    # thumbnail: str | None = None
 
     permissions: list[Permission] = []
     public_permission: PermissionSchema = PermissionSchema()
@@ -91,6 +92,13 @@ class FileMetaData(BusinessOwnedEntity):
         ).strip("/")
 
         return f"{base_url}/v1/f/{self.uid}/{self.filename}"
+
+    @property
+    def thumbnail(self) -> str | None:
+        if self.content_type.startswith("image/"):
+            return self.url
+
+        return get_icon_from_mime_type(self.content_type)
 
     @property
     def real_size(self) -> int:

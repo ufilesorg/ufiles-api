@@ -74,6 +74,8 @@ class FileMetaDataOut(FileMetaDataCreate, BusinessOwnedEntitySchema):
     size: int = 4096
     deleted_at: datetime | None = None
 
+    thumbnail: str | None = None
+
 
 class FileMetaDataUpdate(BaseModel):
     is_deleted: bool | None = None

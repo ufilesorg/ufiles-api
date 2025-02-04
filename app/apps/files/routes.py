@@ -152,7 +152,15 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             **params,
         )
         return PaginatedResponse(
-            items=items, offset=offset, limit=limit, total=total_items
+            items=[
+                FileMetaDataOut(
+                    **item.model_dump(), url=item.url, thumbnail=item.thumbnail
+                )
+                for item in items
+            ],
+            offset=offset,
+            limit=limit,
+            total=total_items,
         )
 
     async def get_volume(
