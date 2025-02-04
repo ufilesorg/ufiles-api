@@ -99,7 +99,7 @@ mime_type_to_icon = {
     "audio/basic": "icon_color_audio.svg",
     "video/x-generic": "icon_color_video.svg",
     "image/x-generic": "icon_color_img.svg",
-    "text/x-document": "icon_color__doc.svg",
+    "text/x-document": "icon_color_doc.svg",
     "application/x-unknown": "unknown_flat_ico.svg",
 }
 
