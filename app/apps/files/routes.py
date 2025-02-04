@@ -224,7 +224,9 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         file: FileMetaData = await self.get_file(request, uid, business)
 
         if details:
-            return FileMetaDataOut(**file.model_dump(), url=file.url)
+            return FileMetaDataOut(
+                **file.model_dump(), url=file.url, thumbnail=file.thumbnail
+            )
 
         if file.is_directory:
             return await self.list_items(
