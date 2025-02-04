@@ -521,7 +521,7 @@ async def upload_url(
     if user is None:
         raise USSOException(status_code=401, error="unauthorized")
 
-    file = await aionetwork.aio_request_binary(url=url)
+    file = await aionetwork.aio_request_binary(url=url, follow_redirects=True)
     uploading_file = UploadFile(file=file, filename=filename or url.split("/")[-1])
     return await upload_file(
         request, user_id, blocking, uploading_file, parent_id, filename
