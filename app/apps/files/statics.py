@@ -50,6 +50,7 @@ icon_to_url = {
     "text_color_jpg.svg": "https://media.pixy.ir/v1/f/b73f106b-6b99-4825-94f1-ef7403e8b842/text_color_jpg.svg",
     "icon_color_doc.svg": "https://media.pixy.ir/v1/f/17408b86-ed3f-4940-b241-e28f42c36504/icon_color_doc.svg",
     "icon_color_file.svg": "https://media.pixy.ir/v1/f/12a6349d-a53a-4036-acb8-b9f97353841a/icon_color_file.svg",
+    "folder-1485.svg": "https://media.pixy.ir/v1/f/577e79d8-588e-4491-a40c-bf5f010926e2/folder-1485.svg",
 }
 
 mime_type_to_icon = {
@@ -101,7 +102,10 @@ mime_type_to_icon = {
     "image/x-generic": "icon_color_img.svg",
     "text/x-document": "icon_color_doc.svg",
     "application/x-unknown": "unknown_flat_ico.svg",
+    "application/x-folder": "folder-1485.svg",
 }
+
+unknown_icon_url = "https://media.pixy.ir/v1/f/973fb3a9-90a3-4619-b2a9-847c0e0ff388/unknown_flat_ico.svg"
 
 
 mime_type_to_icon_url = {
@@ -110,7 +114,4 @@ mime_type_to_icon_url = {
 
 
 def get_icon_from_mime_type(mime_type: str) -> str:
-    return mime_type_to_icon_url.get(
-        mime_type,
-        "https://media.pixy.ir/v1/f/973fb3a9-90a3-4619-b2a9-847c0e0ff388/unknown_flat_ico.svg",
-    )
+    return mime_type_to_icon_url.get(mime_type, unknown_icon_url)

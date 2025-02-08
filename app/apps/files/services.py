@@ -16,6 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
 from fastapi_mongo_base.core.exceptions import BaseHTTPException
+from fastapi_mongo_base.utils import basic
 from server.config import Settings
 from usso.b64tools import b64_encode_uuid_strip
 
@@ -72,12 +73,12 @@ def get_metadata(file: BytesIO, mime: str) -> dict:
     meta_data = {}
     try:
         if mime.startswith("image/"):
+            from fastapi_mongo_base.utils import imagetools
             from PIL import Image
-            from utils import imagetools
 
             image = Image.open(file)
             file.seek(0)
-            width, height = imagetools.get_width_height(image)
+            width, height = image.size
             meta_data["width"] = width
             meta_data["height"] = height
             meta_data["aspect_ratio"] = imagetools.get_aspect_ratio_str(width, height)
@@ -264,6 +265,20 @@ async def upload_to_s3(
         await s3_client.upload_fileobj(file_bytes, Bucket=config.s3_bucket, Key=s3_key)
 
 
+async def check_upload_status(
+    s3_key: str, size: int, *, config: Config = None, **kwargs
+):
+    config = config or Config()
+    session = get_session(config)
+
+    async with session.client(**config.s3_client_kwargs) as s3_client:
+        head = await s3_client.head_object(Bucket=config.s3_bucket, Key=s3_key)
+        if head and head.get("ContentLength") == size:
+            return True
+    return False
+
+
+@basic.retry_execution(attempts=3, delay=1)
 async def manage_upload_to_s3(
     file_bytes: BytesIO,
     s3_key: str,
@@ -287,6 +302,13 @@ async def manage_upload_to_s3(
         )
     else:
         await upload_to_s3(file_bytes, s3_key, config=config, **kwargs)
+
+    if not await check_upload_status(s3_key, size, config=config, **kwargs):
+        raise BaseHTTPException(
+            status_code=500,
+            error="upload_failed",
+            message="Upload failed",
+        )
 
     obj = ObjectMetaData(
         business_name=business_name,
@@ -388,42 +410,40 @@ async def download_from_s3(s3_key, *, config: Config = None, **kwargs):
 
 
 async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
-    try:
-        config = config or Config()
-        session = get_session(config)
-        # Get start and end bytes from kwargs if present
-        start = kwargs.get("start", None)
-        end = kwargs.get("end", None)
+    config = config or Config()
+    session = get_session(config)
+    # Get start and end bytes from kwargs if present
+    start = kwargs.get("start", None)
+    end = kwargs.get("end", None)
 
-        async with session.client(**config.s3_client_kwargs) as s3_client:
-            # Add Range parameter if start/end are specified
-            get_object_kwargs = {"Bucket": config.s3_bucket, "Key": s3_key}
-            if start is not None and end is not None:
-                get_object_kwargs["Range"] = f"bytes={start}-{end}"
+    async with session.client(**config.s3_client_kwargs) as s3_client:
+        # Add Range parameter if start/end are specified
+        get_object_kwargs = {"Bucket": config.s3_bucket, "Key": s3_key}
+        if start is not None and end is not None:
+            get_object_kwargs["Range"] = f"bytes={start}-{end}"
 
+        try:
             response = await s3_client.get_object(**get_object_kwargs)
 
             # Stream the response body
             body = response["Body"]
-            try:
-                async for chunk in body.iter_chunks():
-                    yield chunk
-            finally:
-                body.close()
-    except Exception as e:
-        import traceback
-
-        traceback_str = "".join(traceback.format_tb(e.__traceback__))
-        logging.error(f"Error streaming from S3: {s3_key=}")
-        logging.error(traceback_str)
-        logging.error(f"{type(e)=} {e=}")
+            async for chunk in body.iter_chunks():
+                yield chunk
+        except s3_client.exceptions.NoSuchKey:
+            raise BaseHTTPException(
+                status_code=500,
+                error="file_not_found",
+                message="File not found",
+            )
+        finally:
+            body.close()
 
 
 async def convert_image_from_s3(
     s3_key, *, config: Config = None, format: str, **kwargs
 ):
+    from fastapi_mongo_base.utils import imagetools
     from PIL import Image
-    from utils import imagetools
 
     file_bytes = await download_from_s3(s3_key, config=config)
     image = Image.open(file_bytes)

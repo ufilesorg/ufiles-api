@@ -94,7 +94,11 @@ class FileMetaData(BusinessOwnedEntity):
         return f"{base_url}/v1/f/{self.uid}/{self.filename}"
 
     @property
-    def thumbnail(self) -> str | None:
+    def icon(self) -> str | None:
+        return get_icon_from_mime_type(self.content_type)
+
+    @property
+    def preview(self) -> str | None:
         if self.content_type.startswith("image/"):
             return self.url
 
