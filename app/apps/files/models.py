@@ -71,8 +71,7 @@ class FileMetaData(BusinessOwnedEntity):
     content_type: str = "inode/directory"
     size: int = 4096
     deleted_at: datetime | None = None
-    # thumbnail: str | None = None
-
+    
     permissions: list[Permission] = []
     public_permission: PermissionSchema = PermissionSchema()
 
