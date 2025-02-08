@@ -102,7 +102,7 @@ mime_type_to_icon = {
     "image/x-generic": "icon_color_img.svg",
     "text/x-document": "icon_color_doc.svg",
     "application/x-unknown": "unknown_flat_ico.svg",
-    "application/x-folder": "folder-1485.svg",
+    "inode/directory": "folder-1485.svg",
 }
 
 unknown_icon_url = "https://media.pixy.ir/v1/f/973fb3a9-90a3-4619-b2a9-847c0e0ff388/unknown_flat_ico.svg"
