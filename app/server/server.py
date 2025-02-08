@@ -18,6 +18,7 @@ app = app_factory.create_app(
         "https://pixy.ir",
         "https://studio.pixy.ir",
         "https://studio.pixiee.io",
+        "https://dev.pixy.ir",
     ],
 )
 app.include_router(files_router, prefix="/v1")
