@@ -71,7 +71,7 @@ class FileMetaData(BusinessOwnedEntity):
     content_type: str = "inode/directory"
     size: int = 4096
     deleted_at: datetime | None = None
-    
+
     permissions: list[Permission] = []
     public_permission: PermissionSchema = PermissionSchema()
 
@@ -101,7 +101,10 @@ class FileMetaData(BusinessOwnedEntity):
         if self.content_type.startswith("image/"):
             return self.url
 
-        return get_icon_from_mime_type(self.content_type)
+        if self.content_type.startswith("video/"):
+            return self.url
+
+        return self.icon
 
     @property
     def real_size(self) -> int:

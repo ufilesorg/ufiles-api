@@ -154,7 +154,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         return PaginatedResponse(
             items=[
                 FileMetaDataOut(
-                    **item.model_dump(), url=item.url, icon=item.icon, preview=item.url
+                    **item.model_dump(), url=item.url, icon=item.icon, preview=item.preview
                 )
                 for item in items
             ],
@@ -225,7 +225,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
 
         if details:
             return FileMetaDataOut(
-                **file.model_dump(), url=file.url, icon=file.icon, preview=file.url
+                **file.model_dump(), url=file.url, icon=file.icon, preview=file.preview
             )
 
         if file.is_directory:
