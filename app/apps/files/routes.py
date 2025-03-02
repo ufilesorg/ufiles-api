@@ -154,7 +154,10 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         return PaginatedResponse(
             items=[
                 FileMetaDataOut(
-                    **item.model_dump(), url=item.url, icon=item.icon, preview=item.preview
+                    **item.model_dump(),
+                    url=item.url,
+                    icon=item.icon,
+                    preview=item.preview,
                 )
                 for item in items
             ],

@@ -3,16 +3,14 @@ import hashlib
 import logging
 import os
 import uuid
-from functools import lru_cache
 from io import BytesIO
 from typing import AsyncGenerator
-import time
 
-import aioboto3
 import aiofiles
 import magic
 from apps.business.models import Business
 from apps.business.schemas import AccessType, Config
+from cachetools import TTLCache, cached
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from fastapi import UploadFile
@@ -249,7 +247,10 @@ async def change_file(
 
 
 # @lru_cache
-def get_session(config: Config) -> aioboto3.Session:
+@cached(TTLCache(maxsize=8, ttl=60 * 60))
+def get_session(config: Config):
+    import aioboto3
+
     return aioboto3.Session(**config.s3_session_kwargs)
 
 
