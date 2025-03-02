@@ -6,6 +6,7 @@ import uuid
 from functools import lru_cache
 from io import BytesIO
 from typing import AsyncGenerator
+import time
 
 import aioboto3
 import aiofiles
@@ -122,6 +123,7 @@ async def process_file(
     file_metadata.update(get_metadata(file_bytes, mime))
 
     filehash = hashlib.md5(file_bytes.getvalue()).hexdigest()
+    # filehash = f"{time.time()}"
     # basename, ext = os.path.splitext(file.filename)
     # filename = f"{basename}_{secrets.token_urlsafe(6)}{ext}"
     filename = file_bytes.name
@@ -137,7 +139,7 @@ async def process_file(
             if existed.parent_id == parent_id:
                 return existed
 
-    s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{filehash}"
+    # s3_key = f"{business.name}/{b64_encode_uuid_strip(user_id)}/{filehash}"
     s3_key = f"{business.name}/{filehash}"
 
     upload_task = asyncio.create_task(
@@ -246,7 +248,7 @@ async def change_file(
     return await file_metadata.save()
 
 
-@lru_cache
+# @lru_cache
 def get_session(config: Config) -> aioboto3.Session:
     return aioboto3.Session(**config.s3_session_kwargs)
 
