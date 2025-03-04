@@ -14,7 +14,7 @@ app = app_factory.create_app(
     origins=[
         "http://localhost:8000",
         "http://localhost:3000",
-        "capasitor://localhost",
+        "capacitor://localhost",
         "http://localhost",
         "https://pixiee.io",
         "https://pixy.ir",
