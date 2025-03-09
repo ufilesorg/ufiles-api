@@ -130,8 +130,8 @@ async def proxy_request(
                             timeout=None,
                         ) as response:
                             # Store response status and headers for later use
-                            response_status = response.status_code
-                            response_headers = dict(response.headers)
+                            response.status_code
+                            dict(response.headers)
 
                             # Stream the response content
                             async for chunk in response.aiter_bytes():
