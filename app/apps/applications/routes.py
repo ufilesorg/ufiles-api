@@ -2,6 +2,7 @@ import httpx
 from apps.business.middlewares import get_business
 from apps.business.models import Business
 from fastapi import Depends, Query, Request, Response
+from fastapi.responses import StreamingResponse
 from fastapi_mongo_base.core import exceptions
 from fastapi_mongo_base.schemas import PaginatedResponse
 from server.config import Settings
@@ -105,19 +106,87 @@ async def proxy_request(
     headers.pop("host", None)
     body = await request.body()
 
-    async with httpx.AsyncClient() as client:
-        response = await client.request(
-            method=method,
-            url=url,
-            headers=request.headers,
-            params=request.query_params,
-            data=body,
-            timeout=None,
-        )
+    # Check if the request is expecting a streaming response
+    is_stream = False
+    accept_header = headers.get("accept", "").lower()
+    if (
+        "text/event-stream" in accept_header
+        or headers.get("x-stream", "").lower() == "true"
+    ):
+        is_stream = True
+
+    try:
+        async with httpx.AsyncClient() as client:
+            if is_stream:
+                # Handle streaming response
+                async def stream_response():
+                    try:
+                        async with client.stream(
+                            method=method,
+                            url=url,
+                            headers=headers,
+                            params=request.query_params,
+                            content=body,
+                            timeout=None,
+                        ) as response:
+                            # Store response status and headers for later use
+                            response_status = response.status_code
+                            response_headers = dict(response.headers)
+
+                            # Stream the response content
+                            async for chunk in response.aiter_bytes():
+                                yield chunk
+                    except httpx.HTTPStatusError as e:
+                        # Handle HTTP errors during streaming
+                        yield f"Error: {str(e)}".encode()
+                    except Exception as e:
+                        # Handle general errors during streaming
+                        yield f"Unexpected error: {str(e)}".encode()
+
+                # Return a streaming response
+                response = await client.stream(
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    params=request.query_params,
+                    content=body,
+                    timeout=None,
+                )
+
+                return StreamingResponse(
+                    stream_response(),
+                    status_code=response.status_code,
+                    media_type=response.headers.get(
+                        "content-type", "application/octet-stream"
+                    ),
+                    headers=dict(response.headers),
+                )
+            else:
+                # Handle regular response
+                response = await client.request(
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    params=request.query_params,
+                    content=body,
+                    timeout=None,
+                )
+                return Response(
+                    status_code=response.status_code,
+                    content=response.content,
+                    headers=dict(response.headers),
+                )
+    except httpx.HTTPStatusError as e:
         return Response(
-            status_code=response.status_code,
-            content=response.content,
-            headers=dict(response.headers),
+            status_code=e.response.status_code,
+            content=e.response.content,
+            headers=dict(e.response.headers),
+        )
+    except Exception as e:
+        return Response(
+            status_code=500,
+            content=str(e).encode(),
+            headers={},
         )
 
 

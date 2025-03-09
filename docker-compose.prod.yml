@@ -24,13 +24,8 @@ services:
       - "traefik.http.routers.${PROJECT_NAME}-secure.tls.certresolver=letsencrypt"
       - "traefik.http.services.${PROJECT_NAME}.loadbalancer.server.port=8000"
       - "traefik.docker.network=traefik-net"
-      # - "traefik.http.middlewares.video-streaming.headers.customResponseHeaders.Access-Control-Allow-Origin=*"
-      # - "traefik.http.middlewares.video-streaming.headers.customResponseHeaders.Access-Control-Allow-Methods=GET, OPTIONS"
-      # - "traefik.http.middlewares.video-streaming.headers.customResponseHeaders.Access-Control-Allow-Headers=Range"
-      # - "traefik.http.middlewares.compression.compress=true"
-      # - "traefik.http.middlewares.${PROJECT_NAME}.headers.customResponseHeaders.Accept-Ranges=bytes"
-      # - "traefik.http.services.${PROJECT_NAME}.loadbalancer.passHostHeader=true"
-      # - "traefik.http.routers.${PROJECT_NAME}-secure.middlewares=video-streaming,compression"
+      - "traefik.http.routers.${PROJECT_NAME}.priority=1"
+      - "traefik.http.routers.${PROJECT_NAME}-secure.priority=1"
 
 networks:
   mongo-net:

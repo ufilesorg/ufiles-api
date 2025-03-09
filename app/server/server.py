@@ -19,6 +19,9 @@ app = app_factory.create_app(
         "https://studio.pixy.ir",
         "https://studio.pixiee.io",
         "https://dev.pixy.ir",
+        "capacitor://localhost",
+        "http://localhost",
+        "https://localhost",
     ],
 )
 app.include_router(files_router, prefix="/v1")
