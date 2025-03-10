@@ -519,6 +519,37 @@ async def upload_file(
     return file_metadata
 
 
+@router.post("/upload_base64", response_model=FileMetaDataOut)
+async def upload_file_base64(
+    request: Request,
+    # user: UserData = Depends(jwt_access_security),
+    # business: Business = Depends(get_business),
+    user_id: uuid.UUID | None = Body(default=None),
+    blocking: bool = False,
+    file: str = Body(default=None),
+    parent_id: uuid.UUID | None = Body(default=None),
+    filename: str | None = Body(default=None),
+    mime_type: str | None = Body(default=None),
+):
+    import base64
+    from io import BytesIO
+
+    if mime_type is None and not file.startswith("data:"):
+        raise BaseHTTPException(
+            status_code=400,
+            error="mime_type_required",
+            message="Mime type is required",
+        )
+    if mime_type is None:
+        mime_type = file.split(";")[0].split(":")[1]
+        file = file.split(";")[1]
+    file_bytes = BytesIO(base64.b64decode(file))
+    uploading_file = UploadFile(file=file_bytes, filename=filename or "file")
+    return await upload_file(
+        request, user_id, blocking, uploading_file, parent_id, filename
+    )
+
+
 @router.post("/url", response_model=FileMetaDataOut)
 async def upload_url(
     request: Request,
