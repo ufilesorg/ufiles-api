@@ -7,10 +7,11 @@ from apps.files.routes import router as files_router
 from fastapi_mongo_base.core import app_factory
 from fastapi_mongo_base.routes import copy_router
 
-from . import config
+from . import config, worker
 
 app = app_factory.create_app(
     settings=config.Settings(),
+    worker=worker.worker,
     origins=[
         "http://localhost:8000",
         "http://localhost:3000",

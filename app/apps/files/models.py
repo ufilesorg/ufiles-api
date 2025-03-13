@@ -346,7 +346,8 @@ class FileMetaData(BusinessOwnedEntity):
                 is_deleted=self.is_deleted,
             )
             for file in files:
-                await file.delete(user_id)
+                if file.uid != self.uid:
+                    await file.delete(user_id)
 
         if not self.is_deleted:
             self.is_deleted = True
