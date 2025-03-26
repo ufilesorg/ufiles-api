@@ -76,7 +76,6 @@ def get_metadata(file: BytesIO, mime: str) -> dict:
             from PIL import Image
 
             image = Image.open(file)
-            file.seek(0)
             width, height = image.size
             meta_data["width"] = width
             meta_data["height"] = height
@@ -84,6 +83,7 @@ def get_metadata(file: BytesIO, mime: str) -> dict:
     except:
         pass
 
+    file.seek(0)
     return meta_data
 
 
@@ -430,6 +430,12 @@ async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
 
             # Stream the response body
             body = response["Body"]
+            # get content length
+
+            content_length = await s3_client.head_object(
+                Bucket=config.s3_bucket, Key=s3_key
+            )
+
             async for chunk in body.iter_chunks():
                 yield chunk
         except s3_client.exceptions.NoSuchKey:
@@ -439,7 +445,12 @@ async def stream_from_s3(s3_key, *, config: Config = None, **kwargs):
                 message="File not found",
             )
         finally:
-            body.close()
+            if not body or not hasattr(body, "close"):
+                return
+            if asyncio.iscoroutinefunction(body.close):
+                await body.close()
+            else:
+                body.close()
 
 
 async def convert_image_from_s3(

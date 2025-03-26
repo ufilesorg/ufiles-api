@@ -220,6 +220,31 @@ class FileMetaData(BusinessOwnedEntity):
         return [cls(**item) for item in items], total_items
 
     @classmethod
+    async def remove_no_s3_key_files(cls):
+        # create a query to aggregate to find all files that there is no ObjectMetaData with the same s3_key
+        pipeline = [
+            {"$match": {"s3_key": {"$exists": True}}},
+            {"$group": {"_id": "$s3_key"}},
+            {
+                "$lookup": {
+                    "from": "ObjectMetaData",
+                    "localField": "_id",
+                    "foreignField": "s3_key",
+                    "as": "ObjectMetaData",
+                }
+            },
+            {"$match": {"ObjectMetaData": {"$size": 0}}},
+        ]
+        files = await cls.aggregate(pipeline).to_list()
+        for i, f in enumerate(files):
+            if i % 10 == 0:
+                print(f"Deleting file {i + 1} of {len(files)}")
+            file = await cls.find_one({"s3_key": f["_id"]})
+            if file:
+                await file.delete(file.user_id)
+                await file.delete(file.user_id)
+
+    @classmethod
     async def get_file(
         cls,
         user_id: str,
@@ -355,12 +380,12 @@ class FileMetaData(BusinessOwnedEntity):
             await self.save()
             return
 
-        await super().delete()
         other_files = await self.find({"s3_key": self.s3_key}).count()
         if other_files == 0:
             object_meta = await ObjectMetaData.find_one({"s3_key": self.s3_key})
             if object_meta:
                 await object_meta.delete()
+        await super().delete()
 
     async def restore(self, user_id: uuid.UUID):
         if not self.user_permission(user_id).delete:
