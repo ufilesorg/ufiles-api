@@ -98,3 +98,13 @@ class MultiPartOut(BaseModel):
 class PartUploadOut(BaseModel):
     part_number: int
     etag: str
+
+
+class VolumeOut(BaseModel):
+    volume: int = Field(
+        description="Total size in bytes of all files owned by the requesting user"
+    )
+    max_volume: int = Field(
+        default=0,
+        description="Maximum size in bytes of all files owned by the requesting user",
+    )

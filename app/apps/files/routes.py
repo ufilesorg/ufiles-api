@@ -26,6 +26,7 @@ from .schemas import (
     FileMetaDataUpdate,
     MultiPartOut,
     PartUploadOut,
+    VolumeOut,
 )
 from .services import (
     change_file,
@@ -58,7 +59,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             "/volume",
             self.get_volume,
             methods=["GET"],
-            # response_model=VolumeOut,
+            response_model=VolumeOut,
         )
         self.router.add_api_route(
             "/{uid:uuid}",
@@ -173,7 +174,7 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
     ):
         user: UserData = await self.get_user(request)
         volume = await FileMetaData.get_volume(user.uid, business.name)
-        return {"volume": volume}
+        return VolumeOut(volume=volume)
 
     async def get_file(
         self,

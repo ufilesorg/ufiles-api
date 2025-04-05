@@ -17,6 +17,7 @@ app = app_factory.create_app(
         "http://localhost:3000",
         "https://pixiee.io",
         "https://dev.pixiee.io",
+        "https://dkp.pixiee.io",
         "https://studio.pixiee.io",
         "https://pixy.ir",
         "https://studio.pixy.ir",
