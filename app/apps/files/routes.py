@@ -74,6 +74,12 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
             # response_model=FileMetaDataSignedUrl,
         )
         self.router.add_api_route(
+            "/{uid:uuid}/{path:path}",
+            self.head_item,
+            methods=["HEAD"],
+            # response_model=FileMetaDataSignedUrl,
+        )
+        self.router.add_api_route(
             "/",
             self.create_item,
             methods=["POST"],
@@ -344,6 +350,25 @@ class FilesRouter(AbstractBusinessBaseRouter[FileMetaData, FileMetaDataOut]):
         )
 
         return RedirectResponse(presigned_url)
+
+    async def head_item(
+        self,
+        request: Request,
+        uid: uuid.UUID,
+        business: Business = Depends(get_business),
+        stream: bool = True,
+        details: bool = False,
+        convert_format: Literal["png", "jpeg", "webp"] | None = None,
+        width: int | None = None,
+        height: int | None = None,
+    ):
+        file: FileMetaData = await self.get_file(request, uid, business)
+        headers = {
+            "Content-Disposition": f"inline; filename*=UTF-8''{quote(file.filename)}",
+            "Content-length": str(file.size),
+            "Accept-Ranges": "bytes",
+        }
+        return Response(headers=headers)
 
     async def create_item(
         self,

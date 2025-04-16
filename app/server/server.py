@@ -5,7 +5,6 @@ from apps.files.routes import router as files_router
 
 # from apps.s3.routes import router as s3_router
 from fastapi_mongo_base.core import app_factory
-from fastapi_mongo_base.routes import copy_router
 
 from . import config, worker
 
@@ -25,12 +24,13 @@ app = app_factory.create_app(
         "capacitor://localhost",
         "http://localhost",
         "https://localhost",
+        "http://localhost:8081",
     ],
 )
 app.include_router(files_router, prefix="/v1")
-app.include_router(
-    copy_router(files_router, new_prefix="/files"), include_in_schema=False
-)
+# app.include_router(
+#     copy_router(files_router, new_prefix="/files"), include_in_schema=False
+# )
 app.include_router(download_router, prefix="/v1")
 app.include_router(business_router, prefix="/v1")
 app.include_router(app_router, prefix="/v1")
