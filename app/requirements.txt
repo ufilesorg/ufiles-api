@@ -1,6 +1,6 @@
 uvicorn
 fastapi
-pydantic
+pydantic[email]
 httpx
 
 singleton_package
