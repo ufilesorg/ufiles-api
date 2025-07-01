@@ -13,7 +13,7 @@ aiofiles
 aiocache
 
 beanie
-fastapi-mongo-base<0.12
+fastapi-mongo-base<0.10
 ufaas-fastapi-business
 
 apscheduler
