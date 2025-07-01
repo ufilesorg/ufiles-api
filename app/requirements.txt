@@ -13,7 +13,7 @@ aiofiles
 aiocache
 
 beanie
-fastapi-mongo-base
+fastapi-mongo-base<0.12
 ufaas-fastapi-business
 
 apscheduler
@@ -22,7 +22,7 @@ pillow
 
 ufiles
 ufaas
-usso[fastapi]
+usso[fastapi]<0.28
 
 python-multipart
 python-magic
