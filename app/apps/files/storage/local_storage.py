@@ -9,6 +9,8 @@ from pathlib import Path
 import aiofiles
 from fastapi_mongo_base.core.exceptions import BaseHTTPException
 
+from server.config import Settings
+
 from .base_storage import StorageBackend
 
 
@@ -29,10 +31,14 @@ class LocalStorageBackend(StorageBackend):
                 - base_url: Base URL for public file access (optional)
                 - create_dirs: Whether to create directories if they don't exist
         """
-        self.config = config
-        self.base_path: Path = Path(config["base_path"])
-        self.base_url: str | None = config.get("base_url")
-        self.create_dirs: bool = config.get("create_dirs", True)
+        self.config = config or {
+            "base_path": Settings.LOCAL_STORAGE_PATH,
+            "base_url": Settings.LOCAL_STORAGE_BASE_URL,
+            "create_dirs": True,
+        }
+        self.base_path: Path = Path(self.config["base_path"])
+        self.base_url: str | None = self.config.get("base_url")
+        self.create_dirs: bool = self.config.get("create_dirs", True)
 
         # Create base directory if it doesn't exist
         if self.create_dirs:

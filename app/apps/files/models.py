@@ -7,7 +7,7 @@ from pydantic import Field
 from pymongo import ASCENDING, IndexModel
 from usso.exceptions import PermissionDenied
 
-from .schemas import FileMetaDataOut, Permission, PermissionEnum, PermissionSchema
+from .schemas import FileMetaDataSchema, Permission, PermissionEnum, PermissionSchema
 
 
 class ObjectMetaData(BaseEntity):
@@ -51,7 +51,7 @@ class ObjectMetaData(BaseEntity):
         return await cls.find_one({"key": key})
 
 
-class FileMetaData(FileMetaDataOut, UserOwnedEntity):
+class FileMetaData(FileMetaDataSchema, UserOwnedEntity):
     @classmethod
     def _get_permission_query(
         cls, *, user_id: str, root_permission: bool = False
@@ -121,7 +121,7 @@ class FileMetaData(FileMetaDataOut, UserOwnedEntity):
         is_directory: bool | None = None,
         content_type: str | None = None,
         **kwargs: object,
-    ) -> tuple[list["FileMetaData"], int]:
+    ) -> list["FileMetaData"]:
         kwargs.update({
             "user_id": user_id,
             "offset": offset,
@@ -148,11 +148,10 @@ class FileMetaData(FileMetaDataOut, UserOwnedEntity):
 
         pipeline = [
             {"$match": {"key": {"$exists": True}}},
-            {"$group": {"object_key": "$key"}},
             {
                 "$lookup": {
                     "from": "ObjectMetaData",
-                    "localField": "object_key",
+                    "localField": "key",
                     "foreignField": "key",
                     "as": "ObjectMetaData",
                 }
@@ -163,7 +162,7 @@ class FileMetaData(FileMetaDataOut, UserOwnedEntity):
         for file in files:
             # if i % 10 == 0:
             #     pass
-            file = await cls.find_one({"key": file["object_key"]})
+            file = await cls.find_one({"key": file["key"]})
             if file:
                 await file.delete(file.user_id)
                 await file.delete(file.user_id)
@@ -199,6 +198,7 @@ class FileMetaData(FileMetaDataOut, UserOwnedEntity):
             filename=dirname,
             is_directory=True,
             parent_id=parent_id,
+            content_type="inode/directory",
             **kwargs,
         )
         await res.save()

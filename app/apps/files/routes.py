@@ -18,7 +18,7 @@ from server.config import Settings
 from .file_manager import file_manager
 from .models import FileMetaData
 from .schemas import (
-    FileMetaDataOut,
+    FileMetaDataSchema,
     FileMetaDataUpdate,
     MultiPartOut,
     PartUploadOut,
@@ -31,7 +31,7 @@ usso_auth = USSOAuthentication(raise_exception=False)
 
 class FilesRouter(usso_routes.AbstractTenantUSSORouter):
     model = FileMetaData
-    schema = FileMetaDataOut
+    schema = FileMetaDataSchema
 
     def __init__(self) -> None:
         super().__init__(
@@ -43,7 +43,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
     def config_schemas(self, schema: type, **kwargs: object) -> None:
         super().config_schemas(
             schema,
-            list_item_schema=FileMetaDataOut,
+            list_item_schema=FileMetaDataSchema,
             retrieve_response_schema=None,
         )
 
@@ -52,7 +52,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
             "/",
             self.list_items,
             methods=["GET"],
-            response_model=PaginatedResponse[FileMetaDataOut],
+            response_model=PaginatedResponse[FileMetaDataSchema],
         )
         self.router.add_api_route(
             "/volume",
@@ -82,25 +82,25 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
             "/{uid}",
             self.change_item,
             methods=["PUT"],
-            response_model=FileMetaDataOut,
+            response_model=FileMetaDataSchema,
         )
         self.router.add_api_route(
             "/upload",
             self.upload_file,
             methods=["POST"],
-            response_model=FileMetaDataOut,
+            response_model=FileMetaDataSchema,
         )
         self.router.add_api_route(
             "/upload_base64",
             self.upload_file_base64,
             methods=["POST"],
-            response_model=FileMetaDataOut,
+            response_model=FileMetaDataSchema,
         )
         self.router.add_api_route(
             "/upload_url",
             self.upload_url,
             methods=["POST"],
-            response_model=FileMetaDataOut,
+            response_model=FileMetaDataSchema,
         )
         self.router.add_api_route(
             "/multipart",
@@ -118,7 +118,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
             "/multipart/{upload_id:str}/complete",
             self.finish_multipart,
             methods=["POST"],
-            response_model=FileMetaDataOut,
+            response_model=FileMetaDataSchema,
         )
 
     async def list_items(
@@ -134,7 +134,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
         is_directory: bool | None = None,
         user_id: str | None = None,
         content_type: str | None = None,
-    ) -> PaginatedResponse[FileMetaDataOut]:
+    ) -> PaginatedResponse[FileMetaDataSchema]:
         user: UserData | None = await self.get_user(request)
 
         root_permission = False
@@ -214,7 +214,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
         file: FileMetaData = await self.get_file(request, uid)
 
         if details:
-            return FileMetaDataOut(
+            return FileMetaDataSchema(
                 **file.model_dump(), url=file.url, icon=file.icon, preview=file.preview
             )
 
@@ -331,7 +331,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
         meta_data = await file_manager.change_file(
             file=file, file_metadata=item, blocking=blocking, overwrite=overwrite
         )
-        return FileMetaDataOut(**meta_data.model_dump())
+        return FileMetaDataSchema(**meta_data.model_dump())
 
     async def update_item(
         self,
@@ -415,7 +415,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
         file: UploadFile = File(..., description="The file to upload"),  # noqa: B008
         parent_id: str | None = Body(default=None),
         filename: str | None = Body(default=None),
-    ) -> FileMetaDataOut:
+    ) -> FileMetaDataSchema:
         user: UserData = await usso_auth(self)
 
         if user is None:
@@ -450,7 +450,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
         parent_id: str | None = Body(default=None),
         filename: str | None = Body(default=None),
         mime_type: str | None = Body(default=None),
-    ) -> FileMetaDataOut:
+    ) -> FileMetaDataSchema:
         import base64
         from io import BytesIO
 
@@ -477,7 +477,7 @@ class FilesRouter(usso_routes.AbstractTenantUSSORouter):
         blocking: bool = False,
         parent_id: str | None = Body(default=None),
         filename: str | None = Body(default=None),
-    ) -> FileMetaDataOut:
+    ) -> FileMetaDataSchema:
         user: UserData = await usso_auth(request)
 
         if user is None:

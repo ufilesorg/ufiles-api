@@ -61,14 +61,14 @@ class FileMetaDataCreate(BaseModel):
     public_permission: PermissionSchema = PermissionSchema()
 
 
-class FileMetaDataOut(FileMetaDataCreate, UserOwnedEntitySchema):
+class FileMetaDataSchema(FileMetaDataCreate, UserOwnedEntitySchema):
     key: str | None = None
 
     url: str | None = None
 
     filehash: str | None = None
 
-    access_at: datetime
+    access_at: datetime = Field(default_factory=datetime.now)
 
     content_type: str
     size: int = 4096
@@ -80,7 +80,7 @@ class FileMetaDataOut(FileMetaDataCreate, UserOwnedEntitySchema):
     history: list[dict] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def validate_icon(cls, data: "FileMetaDataOut") -> "FileMetaDataOut":  # noqa: N805
+    def validate_icon(cls, data: "FileMetaDataSchema") -> "FileMetaDataSchema":  # noqa: N805
         if data.icon is None:
             data.icon = statics.get_icon_from_mime_type(data.content_type)
 

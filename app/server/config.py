@@ -18,7 +18,7 @@ class Settings(config.Settings):
     update_time: int = 60 * 60 * 24
 
     # Storage backend configuration
-    STORAGE_BACKEND: str = os.getenv("STORAGE_BACKEND", "s3")  # s3, local, nextcloud
+    STORAGE_BACKEND: str = os.getenv("STORAGE_BACKEND", "local")  # s3, local, nextcloud
 
     # S3 Storage Configuration
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")

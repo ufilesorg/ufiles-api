@@ -29,7 +29,7 @@ class FileManager(metaclass=Singleton):
         Args:
             storage_backend_name: Name of storage backend to use, if None uses default
         """
-        self.storage_backend_name = storage_backend_name
+        self.storage_backend_name = storage_backend_name or Settings.STORAGE_BACKEND
         self._storage_backend = None
 
     @property
@@ -331,7 +331,7 @@ class FileManager(metaclass=Singleton):
         ):
             yield chunk
 
-    async def delete_file(self, file_metadata: FileMetaData) -> bool:
+    async def delete_file(self, file_metadata: FileMetaData | str) -> bool:
         """
         Delete file from storage backend.
 
@@ -341,7 +341,12 @@ class FileManager(metaclass=Singleton):
         Returns:
             bool: True if deletion was successful
         """
-        return await self.storage_backend.delete_file(file_metadata.key)
+
+        if isinstance(file_metadata, FileMetaData):
+            key = file_metadata.key
+        else:
+            key = file_metadata
+        return await self.storage_backend.delete_file(key)
 
     async def generate_presigned_url(
         self, file_metadata: FileMetaData, expires_in: int = 3600

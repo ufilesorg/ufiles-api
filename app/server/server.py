@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 from fastapi_mongo_base.core import app_factory
 
-from apps.files.file_manager import initialize_storage_backends
 from apps.files.routes import router as files_router
 
 from . import config, db
@@ -22,7 +21,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 app = app_factory.create_app(
     settings=config.Settings(),
-    init_functions=[initialize_storage_backends],
     lifespan_func=lifespan,
 )
 
