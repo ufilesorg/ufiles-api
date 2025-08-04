@@ -1,0 +1,95 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiofiles>=24.1.0",
+    "apscheduler>=3.11.0",
+    "beanie>=2.0.0",
+    "fastapi>=0.116.1",
+    "fastapi-mongo-base>=1.0.21",
+    "httpx>=0.28.1",
+    "json-advanced>=0.12.11",
+    "pydantic[email]>=2.11.7",
+    "python-dotenv>=1.1.1",
+    "python-magic>=0.4.27",
+    "python-multipart>=0.0.20",
+    "pytz>=2025.2",
+    "singleton-package>=0.8.0",
+    "usso[fastapi]>=0.28.38",
+    "uvicorn>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "debugpy>=1.8.15",
+    "ipython>=9.4.0",
+    "mongomock-motor>=0.0.36",
+    "pip>=25.1.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.7",
+]
+nextcloud = ["pyncclient>=0.7"]
+s3 = ["aioboto3>=15.0.0", "boto3>=1.38.27"]
+image = [
+    "cairosvg>=2.8.2",
+    "colorthief>=0.2.1",
+    "numpy>=2.3.2",
+    "pillow>=11.3.0",
+    "scikit-learn>=1.7.1",
+]
+cryptography = ["cryptography>=45.0.5"]
+
+[tool.ruff]
+line-length = 88         # Black's default line length
+target-version = "py313"
+fix = true
+unsafe-fixes = true
+preview = true
+
+[tool.ruff.lint]
+select = [
+    "F",     # Pyflakes: critical errors and unused code
+    "E",     # pycodestyle: style issues
+    "W",     # PEP8: formatting issues
+    "I",     # isort: import sorting
+    "UP",    # pyupgrade: modern syntax
+    "B",     # bugbear: potential bugs
+    "T",     # debugger / print statement checks
+    "C",     # complexity: complexity checking
+    "A",     # avoids shadowing Python built-ins
+    "ASYNC", # async/await syntax
+    "SIM",   # simplify: cleaner code
+    "PERF",  # performance optimizations
+    "TRY",   # better try/excepts
+    "N",     # naming conventions
+    "S",     # security checks
+    "ANN",   # type annotation checks
+    "T20",   # no print()
+    "C4",    # comprehension: better loops
+    "COM",   # enforces trailing commas where needed.
+    "EXE",   # executable: executable checking
+    "ISC",   # implicit string concatenation
+    "G",     # misuse of logging string interpolation
+    # "D",     # docstrings: docstring checking
+    # "ERA", # remove commented code
+    "RUF", # ruff-specific improvements
+]
+per-file-ignores = { "tests/*" = ["G004", "S101"] }
+ignore = ["TRY003", "COM812"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.uv.sources]
+accounting = { workspace = true }
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+check_untyped_defs = false
+disallow_untyped_defs = false

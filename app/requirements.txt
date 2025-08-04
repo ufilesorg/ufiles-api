@@ -6,32 +6,31 @@ httpx
 singleton_package
 json-advanced
 python-dotenv
-debugpy
-ipython
 
 aiofiles
 aiocache
 
 beanie
-fastapi-mongo-base<0.10
-ufaas-fastapi-business
+fastapi-mongo-base
 
 apscheduler
-pytz
-pillow
+# pytz
+# pillow
 
-ufiles
-ufaas
-usso[fastapi]<0.28
+# ufiles
+# ufaas
+usso[fastapi]
 
 python-multipart
 python-magic
 
 boto3
 
-colorthief
-cairosvg
-numpy
-scikit-learn
+# colorthief
+# cairosvg
+# numpy
+# scikit-learn
 
-cryptography
+# cryptography
+
+aioboto3

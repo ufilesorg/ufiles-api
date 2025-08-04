@@ -1,22 +1,26 @@
-FROM python:3.12-slim AS fast-base
-
-RUN apt-get update \
-    && apt-get install -y libcairo2 libmagic1 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS fast-uv
 
 WORKDIR /app
 
-COPY requirements.txt requirements2.txt ./
-RUN python -m pip install --no-cache-dir -r requirements.txt \
-    && python -m pip install --no-cache-dir -r requirements2.txt
+COPY pyproject.toml pyproject.toml
 
-RUN adduser --disabled-password --gecos '' user && mkdir /app/logs && chown -R user:user /app/logs
+# RUN uv sync --no-dev --no-cache --no-install-project
+RUN uv pip install --system --no-cache-dir .
 
-FROM fast-base AS fast-server
+
+FROM python:3.13-slim AS fast-server
+
+# Copy installed site-packages from build stage
+COPY --from=fast-uv /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+
+WORKDIR /app
+
+RUN adduser --disabled-password --gecos '' user \
+    && mkdir /app/logs \
+    && chown -R user:user /app/logs
 
 USER user
-COPY . .
+# Copy application code
+COPY --chown=user:user . .
 
-CMD ["python", "-m" ,"debugpy", "--listen", "0.0.0.0:3000", "-m", "app"]
-# CMD [ "python", "app.py" ]
+CMD [ "python", "main.py" ]

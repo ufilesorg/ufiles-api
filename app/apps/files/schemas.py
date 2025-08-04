@@ -1,12 +1,15 @@
-import uuid
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum
 
-from fastapi_mongo_base.schemas import BusinessOwnedEntitySchema, CoreEntitySchema
-from pydantic import BaseModel, Field, field_validator
+from fastapi_mongo_base.schemas import BaseEntitySchema, UserOwnedEntitySchema
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from server.config import Settings
+
+from . import statics
 
 
-class PermissionEnum(int, Enum):
+class PermissionEnum(IntEnum):
     NONE = 0
     READ = 10
     WRITE = 20
@@ -15,45 +18,42 @@ class PermissionEnum(int, Enum):
     OWNER = 100
 
 
-class PermissionSchema(CoreEntitySchema):
+class PermissionSchema(BaseEntitySchema):
     permission: PermissionEnum = Field(default=PermissionEnum.NONE)
 
     @field_validator("permission", mode="before")
-    def validate_permission(cls, v):
+    def validate_permission(cls, v: str | PermissionEnum) -> PermissionEnum:  # noqa: N805
         if isinstance(v, str):
-            try:
-                return PermissionEnum[v.upper()]
-            except KeyError:
-                raise ValueError(f"Invalid permission string: {v}")
+            return PermissionEnum[v.upper()]
         return v
 
     @property
-    def read(self):
+    def read(self) -> bool:
         return self.permission >= PermissionEnum.READ
 
     @property
-    def write(self):
+    def write(self) -> bool:
         return self.permission >= PermissionEnum.WRITE
 
     @property
-    def manage(self):
+    def manage(self) -> bool:
         return self.permission >= PermissionEnum.MANAGE
 
     @property
-    def delete(self):
+    def delete(self) -> bool:
         return self.permission >= PermissionEnum.DELETE
 
     @property
-    def owner(self):
+    def owner(self) -> bool:
         return self.permission >= PermissionEnum.OWNER
 
 
 class Permission(PermissionSchema):
-    user_id: uuid.UUID
+    user_id: str
 
 
 class FileMetaDataCreate(BaseModel):
-    parent_id: uuid.UUID | None = None
+    parent_id: str | None = None
     is_directory: bool = False
     filename: str
 
@@ -61,8 +61,8 @@ class FileMetaDataCreate(BaseModel):
     public_permission: PermissionSchema = PermissionSchema()
 
 
-class FileMetaDataOut(FileMetaDataCreate, BusinessOwnedEntitySchema):
-    s3_key: str | None = None
+class FileMetaDataOut(FileMetaDataCreate, UserOwnedEntitySchema):
+    key: str | None = None
 
     url: str | None = None
 
@@ -77,10 +77,41 @@ class FileMetaDataOut(FileMetaDataCreate, BusinessOwnedEntitySchema):
     icon: str | None = None
     preview: str | None = None
 
+    history: list[dict] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_icon(cls, data: "FileMetaDataOut") -> "FileMetaDataOut":  # noqa: N805
+        if data.icon is None:
+            data.icon = statics.get_icon_from_mime_type(data.content_type)
+
+        if data.url is None:
+            data.url = "/".join([
+                f"https://{Settings.root_url}{Settings.base_path}f",
+                data.uid,
+                data.filename,
+            ])
+
+        return data
+
+    @field_validator("preview")
+    def validate_preview(cls, preview: str | None) -> str | None:  # noqa: N805
+        if preview is None:
+            if cls.content_type.startswith("image/"):
+                return cls.url
+
+            if cls.content_type.startswith("video/"):
+                return cls.url
+
+        return preview
+
+    @property
+    def real_size(self) -> int:
+        return self.size + sum(item.get("size", 0) for item in self.history)
+
 
 class FileMetaDataUpdate(BaseModel):
     is_deleted: bool | None = None
-    parent_id: uuid.UUID | None = None
+    parent_id: str | None = None
     filename: str | None = None
 
     permissions: list[Permission] = []

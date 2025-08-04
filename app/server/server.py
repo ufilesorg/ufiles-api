@@ -1,40 +1,35 @@
-from apps.applications.routes import router as app_router
-from apps.business.routes import router as business_router
-from apps.files.routes import download_router
-from apps.files.routes import router as files_router
+import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
-# from apps.s3.routes import router as s3_router
+from fastapi import APIRouter, FastAPI
 from fastapi_mongo_base.core import app_factory
 
-from . import config, worker
+from apps.files.file_manager import initialize_storage_backends
+from apps.files.routes import router as files_router
+
+from . import config, db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    """Initialize application services."""
+    await db.init_mongo_db()
+    logging.info("Startup complete")
+    yield
+    logging.info("Shutdown complete")
+
 
 app = app_factory.create_app(
     settings=config.Settings(),
-    worker=worker.worker,
-    origins=[
-        "http://localhost:8000",
-        "http://localhost:3000",
-        "https://pixiee.io",
-        "https://dev.pixiee.io",
-        "https://dkp.pixiee.io",
-        "https://studio.pixiee.io",
-        "https://pixy.ir",
-        "https://studio.pixy.ir",
-        "https://dev.pixy.ir",
-        "capacitor://localhost",
-        "http://localhost",
-        "https://localhost",
-        "http://localhost:8081",
-    ],
+    init_functions=[initialize_storage_backends],
+    lifespan_func=lifespan,
 )
-app.include_router(files_router, prefix="/v1")
-# app.include_router(
-#     copy_router(files_router, new_prefix="/files"), include_in_schema=False
-# )
-app.include_router(download_router, prefix="/v1")
-app.include_router(business_router, prefix="/v1")
-app.include_router(app_router, prefix="/v1")
-app.include_router(app_router, prefix="/api/v1", include_in_schema=False)
 
 
-# app.include_router(s3_router, include_in_schema=False)
+server_router = APIRouter()
+
+for router in [files_router]:
+    server_router.include_router(router)
+
+app.include_router(server_router, prefix=config.Settings.base_path)
